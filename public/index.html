@@ -368,25 +368,30 @@ function ptimeMunge(sdp){
 let echoGate=0,micGate=0,micAnalyser=null,micSource=null,micData=null,gateRaf=null,lastVoice=0;
 const GATE_NAMES=['NORMAL','ECHO-GATE','CLEAN-GATE'];
 function buildGateBtn(){
-  const keys=document.querySelector('.keys');if(!keys||document.getElementById('gbtn'))return;
+  if(document.getElementById('gbtn'))return;
+  // Cari target: .keys, .body, .wrap, atau fallback body
+  const target=document.querySelector('.keys')||document.querySelector('.body')||document.querySelector('.wrap')||document.body;
+  if(!target){setTimeout(buildGateBtn,300);return}
   const b=document.createElement('button');
-  b.id='gbtn';b.className='k';b.textContent='◎';b.title='Echo/Clean Gate';
+  b.id='gbtn';b.textContent='◎';b.title='Echo/Clean Gate';
+  b.style.cssText='position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#2a2a35,#15151c);border:2px solid #2a2a35;color:#888;font-size:1.6rem;font-family:inherit;cursor:pointer;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);transition:.2s;display:flex;align-items:center;justify-content:center;padding:0;line-height:1';
   b.onclick=toggleGate;
-  keys.appendChild(b);
-  lg('🎛️ Tombol gate di-inject');
+  document.body.appendChild(b);
+  lg('🎛️ Tombol gate di-inject (universal)');
 }
 function toggleGate(){
   echoGate=(echoGate+1)%3;
   const b=document.getElementById('gbtn');
   const led=document.getElementById('led');
-  b.textContent=['◎','◉','◍'][echoGate];
-  b.style.borderColor=['#2a2a35','#00e0ff','#00ff88'][echoGate];
-  b.style.color=['#888','#00e0ff','#00ff88'][echoGate];
+  if(b){
+    b.textContent=['◎','◉','◍'][echoGate];
+    b.style.borderColor=['#2a2a35','#00e0ff','#00ff88'][echoGate];
+    b.style.color=['#888','#00e0ff','#00ff88'][echoGate];
+    b.style.boxShadow=echoGate===0?'0 4px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)':`0 0 20px ${['#2a2a35','#00e0ff','#00ff88'][echoGate]}`;
+  }
   ts('🎛️ '+GATE_NAMES[echoGate],echoGate===0?'':'k');
   lg('Gate →',GATE_NAMES[echoGate]);
-  // CLEAN-GATE: aktifkan mic noise gate
   if(echoGate===2){startMicGate()}else{stopMicGate()}
-  // ECHO-GATE: matikan RA saat TX
   if(echoGate===0&&led)led.classList.remove('echo');
 }
 function startMicGate(){
@@ -444,7 +449,7 @@ if(!document.getElementById('gateCss')){
   st.textContent='.ind.echo{background:#00e0ff;box-shadow:0 0 18px #00e0ff,0 0 32px #00e0ff}';
   document.head.appendChild(st);
 }
-buildGateBtn();
+
 wsC();
 'serviceWorker' in navigator && navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const uo=()=>{const b=$('ob');if(navigator.onLine)b.classList.remove('on');else{b.classList.add('on');net('','OFFLINE')}};
