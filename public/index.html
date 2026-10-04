@@ -38,29 +38,29 @@ audio{display:none}
 <div class=bar><span class=led id=led></span><span id=st>OFFLINE</span></div>
 <div id=form1>
 <input id=mn type=tel placeholder="08..." inputmode=numeric maxlength=15>
-<button class=p onclick=R() style=margin-top:8px>MULAI</button>
+<button class=p onclick="R()" style="margin-top:8px">MULAI</button>
 </div>
 <div id=form2 class=h>
 <div class=bar id=idv>----</div>
 <button class=ptt id=pb disabled ontouchstart="ST(event)" ontouchend="SP(event)" ontouchcancel="SP(event)" onmousedown="ST(event)" onmouseup="SP(event)">PTT</button>
 <div class=row>
-<button class=g onclick=M()>MATCH</button>
-<button class=g onclick=C()>PANGGIL</button>
+<button class=g onclick="M()">MATCH</button>
+<button class=g onclick="C()">PANGGIL</button>
 </div>
 <input id=tn type=tel placeholder="nomor tujuan" inputmode=numeric maxlength=15>
 <div class=row>
-<button class=r onclick=E()>AKHIRI</button>
-<button class=r onclick=L()>KELUAR</button>
+<button class=r onclick="E()">AKHIRI</button>
+<button class=r onclick="L()">KELUAR</button>
 </div>
 </div>
 </div>
-<div id=modal><div class=card><p>📞 Panggilan masuk</p><b id=ci>----</b><div class=row><button class=g onclick=A()>Terima</button><button class=r onclick=X()>Tolak</button></div></div></div>
+<div id=modal><div class=card><p>Panggilan masuk</p><b id=ci>----</b><div class=row><button class=g onclick="A()">Terima</button><button class=r onclick="X()">Tolak</button></div></div></div>
 <script>
 'use strict';
-var $ = function(i){return document.getElementById(i)};
-var cl = function(n){return String(n||'').replace(/\D/g,'')};
-var lg = function(){console.log.apply(console,['[W]'].concat([].slice.call(arguments)))};
-var ttm = null;
+var $=function(i){return document.getElementById(i)};
+var cl=function(n){return String(n||'').replace(/\D/g,'')};
+var lg=function(){console.log.apply(console,['[W]'].concat([].slice.call(arguments)))};
+var ttm=null;
 function ts(m,c){var e=$('ts');e.textContent=m;e.className=(c?'on '+c:'on');clearTimeout(ttm);ttm=setTimeout(function(){e.className=(c||'')},2500)}
 var ws=null,wr=false,retry=0,pingT=null;
 var my=localStorage.getItem('myNo')||'';
@@ -69,25 +69,19 @@ var pc=null,ls=null,rs=null,pend=[],rds=false;
 var po=null,pf=null;
 var ra=$('ra');
 ra.muted=false;ra.volume=1;
-var WU = (location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
+var WU=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
 function st(t){$('st').textContent=t}
 function led(c){$('led').className='led'+(c?' '+c:'')}
 function wsConn(){
-  lg('ws ->',WU);
-  st('CONNECTING');led('w');
+  lg('ws->',WU);st('CONNECTING');led('w');
   try{ws=new WebSocket(WU)}catch(e){st('ERR');setTimeout(wsConn,1500);return}
   ws.onopen=function(){
-    wr=true;retry=0;lg('ws OPEN');
-    st('ONLINE');led('on');
+    wr=true;retry=0;lg('ws OPEN');st('ONLINE');led('on');
     if(my){wsSend({type:'register',no:my});lg('auto-reg',my)}
     clearInterval(pingT);pingT=setInterval(function(){wsSend({type:'ping'})},20000);
   };
   ws.onmessage=function(e){try{om(JSON.parse(e.data))}catch(err){lg('parse',err)}};
-  ws.onclose=function(e){
-    wr=false;clearInterval(pingT);lg('ws CLOSE',e.code);
-    st('RECONNECT');led('w');retry++;
-    setTimeout(wsConn,Math.min(800*retry,4000));
-  };
+  ws.onclose=function(e){wr=false;clearInterval(pingT);lg('ws CLOSE',e.code);st('RECONNECT');led('w');retry++;setTimeout(wsConn,Math.min(800*retry,4000))};
   ws.onerror=function(){lg('ws ERR');st('ERR');led()};
 }
 function wsSend(o){if(ws&&ws.readyState===1){try{ws.send(JSON.stringify(o))}catch(e){}}else lg('ws not ready',o.type)}
@@ -95,13 +89,9 @@ var lp=null;
 function getMic(){
   if(ls)return Promise.resolve(ls);
   if(lp)return lp;
-  lp = navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}})
-    .then(function(s){
-      ls=s;
-      s.getAudioTracks().forEach(function(t){t.enabled=false});
-      lg('mic OK');
-      return s;
-    }).catch(function(e){lp=null;lg('mic err',e.message);throw e});
+  lp=navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}})
+    .then(function(s){ls=s;s.getAudioTracks().forEach(function(t){t.enabled=false});lg('mic OK');return s})
+    .catch(function(e){lp=null;lg('mic err',e.message);throw e});
   return lp;
 }
 function om(m){
@@ -110,24 +100,13 @@ function om(m){
   lg('<-',t);
   if(t==='registered'){
     my=m.no;localStorage.setItem('myNo',m.no);
-    $('form1').classList.add('h');
-    $('form2').classList.remove('h');
-    $('idv').textContent=m.no;
-    ts('✅ '+m.no,'k');
-    getMic().catch(function(){});
+    $('form1').classList.add('h');$('form2').classList.remove('h');
+    $('idv').textContent=m.no;ts('OK '+m.no,'k');getMic().catch(function(){});
   }
-  else if(t==='error'){ts('❌ '+m.msg,'e')}
+  else if(t==='error'){ts('ERR '+m.msg,'e')}
   else if(t==='online'){lg('online',m.list)}
-  else if(t==='match-found'){
-    ts('🎯 match '+m.no,'k');
-    tg=m.no;caller=true;
-    doCall();
-  }
-  else if(t==='incoming'){
-    po=m.sdp;pf=m.from;
-    $('ci').textContent=m.from;
-    $('modal').classList.add('on');
-  }
+  else if(t==='match-found'){ts('match '+m.no,'k');tg=m.no;caller=true;doCall()}
+  else if(t==='incoming'){po=m.sdp;pf=m.from;$('ci').textContent=m.from;$('modal').classList.add('on')}
   else if(t==='accepted'){onAccepted()}
   else if(t==='rejected'){ts('ditolak','e');cleanup()}
   else if(t==='ended'){ts('selesai');cleanup()}
@@ -142,48 +121,30 @@ function R(){
   if(wr)wsSend({type:'register',no:n});
   else ts('menunggu koneksi','e');
 }
-function M(){
-  if(!wr)return ts('belum konek','e');
-  ts('🔍 mencari','k');
-  wsSend({type:'match'});
-}
+function M(){if(!wr)return ts('belum konek','e');ts('mencari','k');wsSend({type:'match'})}
 function C(){
   var t=cl($('tn').value);
   if(!t)return ts('nomor tujuan kosong','e');
   if(t===my)return ts('tidak bisa diri sendiri','e');
-  tg=t;caller=true;
-  doCall();
+  tg=t;caller=true;doCall();
 }
 function doCall(){
   ts('memanggil '+tg);
-  getMic().then(function(){
-    if(!pc)mkPC();
-    return pc.createOffer();
-  }).then(function(o){
-    return pc.setLocalDescription(o);
-  }).then(function(){
-    wsSend({type:'call',to:tg,sdp:pc.localDescription});
-  }).catch(function(e){ts('gagal','e');lg('doCall',e.message)});
+  getMic().then(function(){if(!pc)mkPC();return pc.createOffer()})
+    .then(function(o){return pc.setLocalDescription(o)})
+    .then(function(){wsSend({type:'call',to:tg,sdp:pc.localDescription})})
+    .catch(function(e){ts('gagal','e');lg('doCall',e.message)});
 }
 function A(){
   $('modal').classList.remove('on');
   if(!po)return;
-  tg=pf;caller=false;
-  ts('menyambung');
-  getMic().then(function(){
-    if(!pc)mkPC();
-    return pc.setRemoteDescription(new RTCSessionDescription(po));
-  }).then(function(){
-    rds=true;return flushICE();
-  }).then(function(){
-    return pc.createAnswer();
-  }).then(function(a){
-    return pc.setLocalDescription(a);
-  }).then(function(){
-    wsSend({type:'accept',to:tg});
-    wsSend({type:'sdp',to:tg,sdp:pc.localDescription});
-    po=null;
-  }).catch(function(e){ts('gagal','e');lg('accept',e.message)});
+  tg=pf;caller=false;ts('menyambung');
+  getMic().then(function(){if(!pc)mkPC();return pc.setRemoteDescription(new RTCSessionDescription(po))})
+    .then(function(){rds=true;return flushICE()})
+    .then(function(){return pc.createAnswer()})
+    .then(function(a){return pc.setLocalDescription(a)})
+    .then(function(){wsSend({type:'accept',to:tg});wsSend({type:'sdp',to:tg,sdp:pc.localDescription});po=null})
+    .catch(function(e){ts('gagal','e');lg('accept',e.message)});
 }
 function X(){$('modal').classList.remove('on');if(pf)wsSend({type:'reject',to:pf});po=null;pf=null}
 function E(){if(tg&&wr)wsSend({type:'end',to:tg});cleanup();ts('selesai')}
@@ -192,11 +153,7 @@ function mkPC(){
   if(pc)return pc;
   if(!ls||!ls.getAudioTracks().length)return null;
   var tr=ls.getAudioTracks()[0];
-  pc=new RTCPeerConnection({
-    iceServers:[{urls:'stun:stun.l.google.com:19302'}],
-    iceCandidatePoolSize:10,
-    bundlePolicy:'max-bundle'
-  });
+  pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}],iceCandidatePoolSize:10,bundlePolicy:'max-bundle'});
   pc.addTrack(tr,new MediaStream([tr]));
   pc.ontrack=function(e){
     lg('ONTRACK');
@@ -205,24 +162,17 @@ function mkPC(){
     ra.srcObject=rs;ra.muted=false;ra.volume=1;
     ra.play().then(function(){lg('play OK')}).catch(function(err){lg('play err',err.message)});
   };
-  pc.onicecandidate=function(e){
-    if(e.candidate)wsSend({type:'ice',to:tg,ice:e.candidate});
-  };
+  pc.onicecandidate=function(e){if(e.candidate)wsSend({type:'ice',to:tg,ice:e.candidate})};
   pc.onconnectionstatechange=function(){
     lg('PC',pc.connectionState);
-    if(pc.connectionState==='connected'){
-      $('pb').disabled=false;
-      ts('✅ live','k');
-    }
+    if(pc.connectionState==='connected'){$('pb').disabled=false;ts('live','k')}
   };
   return pc;
 }
 function flushICE(){
   if(!pc||!rds)return Promise.resolve();
   var c=Promise.resolve();
-  while(pend.length){
-    (function(ice){c=c.then(function(){return pc.addIceCandidate(ice).catch(function(){})})})(pend.shift());
-  }
+  while(pend.length){(function(ice){c=c.then(function(){return pc.addIceCandidate(ice).catch(function(){})})})(pend.shift())}
   return c;
 }
 function onAccepted(){
@@ -233,19 +183,15 @@ function onAccepted(){
 }
 function onSdp(m){
   if(!pc)return;
-  var desc=new RTCSessionDescription(m.sdp);
-  if(desc.type==='answer'){
-    pc.setRemoteDescription(desc).then(function(){rds=true;return flushICE()}).catch(function(e){lg('ans',e.message)});
-  }else if(desc.type==='offer'){
-    pc.setRemoteDescription(desc).then(function(){
-      rds=true;return flushICE();
-    }).then(function(){
-      return pc.createAnswer();
-    }).then(function(a){
-      return pc.setLocalDescription(a);
-    }).then(function(){
-      wsSend({type:'sdp',to:m.from,sdp:pc.localDescription});
-    }).catch(function(e){lg('off',e.message)});
+  var d=new RTCSessionDescription(m.sdp);
+  if(d.type==='answer'){
+    pc.setRemoteDescription(d).then(function(){rds=true;return flushICE()}).catch(function(e){lg('ans',e.message)});
+  }else if(d.type==='offer'){
+    pc.setRemoteDescription(d).then(function(){rds=true;return flushICE()})
+      .then(function(){return pc.createAnswer()})
+      .then(function(a){return pc.setLocalDescription(a)})
+      .then(function(){wsSend({type:'sdp',to:m.from,sdp:pc.localDescription})})
+      .catch(function(e){lg('off',e.message)});
   }
 }
 function onIce(m){
@@ -260,8 +206,7 @@ function cleanup(){
   try{if(ls)ls.getTracks().forEach(function(t){t.stop()})}catch(e){}
   ls=null;lp=null;rs=null;ra.srcObject=null;
   pend=[];rds=false;
-  $('pb').disabled=true;
-  $('pb').classList.remove('on');
+  $('pb').disabled=true;$('pb').classList.remove('on');
   po=null;pf=null;
 }
 function ST(e){
