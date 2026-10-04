@@ -161,8 +161,8 @@ async function gm(){
   return lp;
 }
 gm().catch(()=>lg('pre-mic gesture'));
-document.addEventListener('touchstart',()=>{if(ra.paused)ra.play().catch(()=>{});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});if(!ls)gm().catch(()=>{})},{once:true,passive:true});
-document.addEventListener('click',()=>{if(ra.paused)ra.play().catch(()=>{});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});if(!ls)gm().catch(()=>{})},{once:true});
+document.addEventListener('touchstart',()=>{if(ra.paused)if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});if(!ls)gm().catch(()=>{})},{once:true,passive:true});
+document.addEventListener('click',()=>{if(ra.paused)if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});if(!ls)gm().catch(()=>{})},{once:true});
 
 function cp(){
   if(pc)return pc;
@@ -175,7 +175,7 @@ function cp(){
     lg('📥 ONTRACK',e.track.kind);
     if(e.streams&&e.streams[0])rs=e.streams[0];else{if(!rs)rs=new MediaStream();rs.addTrack(e.track)}
     ra.srcObject=rs;try{ra.muted=true}catch(_){};initRxChain(rs);
-    const p=()=>ra.play().catch(()=>{try{ra.muted=true;ra.play().then(()=>ra.muted=false)}catch(_){}});
+    const p=()=>
     p();
     mt(rs);
     e.track.onunmute=()=>lg('📥 UNMUTED');
@@ -249,7 +249,7 @@ function om(m){
   else if(t==='online'){}
   else if(t==='force-logout'){ts('nomor dipakai HP lain','e');setTimeout(L,1500)}
   else if(t==='peer-location'){peerLoc={lat:m.lat,lng:m.lng,acc:m.acc||0};lg('📍 peer',peerLoc);ud()}
-  else if(t==='incoming-call'){ra.play().catch(()=>{});po=m.offer;pf=m.from;if(m.peerLoc)peerLoc={lat:m.peerLoc.lat,lng:m.peerLoc.lng,acc:m.peerLoc.acc||0};$('ci').textContent=m.from;$('n').classList.add('on');navigator.vibrate&&navigator.vibrate([200,100,200]);gm().then(()=>pw()).catch(()=>{})}
+  else if(t==='incoming-call'){po=m.offer;pf=m.from;if(m.peerLoc)peerLoc={lat:m.peerLoc.lat,lng:m.peerLoc.lng,acc:m.peerLoc.acc||0};$('ci').textContent=m.from;$('n').classList.add('on');navigator.vibrate&&navigator.vibrate([200,100,200]);gm().then(()=>pw()).catch(()=>{})}
   else if(t==='call-rejected'){ts('ditolak','e');cl_()}
   else if(t==='call-ended'){ts('selesai');cl_()}
   else if(t==='call-error'){ts(m.msg,'e')}
@@ -273,8 +273,14 @@ async function A(){
 async function oa(m){try{if(!pc)return;await pc.setRemoteDescription(new RTCSessionDescription(m.sdp));rds=1;await fc();[0,300,1000].forEach(t=>setTimeout(ll,t))}catch(e){lg('ans',e)}}
 async function oi(m){if(!pc)return;const c=new RTCIceCandidate(m.candidate);if(!rds){pend.push(c);return}try{await pc.addIceCandidate(c)}catch(e){}}
 function U(a){
-  if(rxChain){if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});setRxLevel(1,.2);if(a)ts('🔊 audio','k');return}
-  ra.muted=false;ra.volume=1;ra.play().then(()=>{if(a)ts('🔊 audio','k')}).catch(()=>{if(a)ts('tap lagi','e')});
+  if(rxChain){
+    if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
+    setRxLevel(1,.2);
+    if(a)ts('🔊 audio','k');
+    return;
+  }
+  ra.muted=false;ra.volume=1;
+  
   if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
 }).catch(()=>{if(a)ts('tap lagi','e')});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
 function R(){
@@ -301,7 +307,6 @@ function cl_(){
 function ST(e){
   if(e){e.preventDefault();e.stopPropagation&&e.stopPropagation()}
   clearTimeout(tailTimer);
-  // URUTAN PENTING: mute speaker dulu, baru aktifkan mic
   setRxLevel(0,0);
   if(rxChain){try{rxChain.gain.gain.cancelScheduledValues(ac.currentTime);rxChain.gain.gain.setValueAtTime(0,ac.currentTime)}catch(_){}}
   try{ra.muted=true}catch(_){}
@@ -573,6 +578,19 @@ function rxRecover(){
   }catch(e){}
 }
 setInterval(rxRecover,500);
+let activeTx=null;
+function setTxTrack(track){
+  if(!track)return;
+  activeTx=track;
+  if(pc){
+    const snd=pc.getSenders().find(x=>x.track&&x.track.kind==='audio');
+    if(snd){
+      snd.replaceTrack(track).then(()=>{lg('🎤 Tx:',track.label||'processed');track.enabled=false}).catch(e=>lg('replaceTrack err',e.message));
+      return;
+    }
+  }
+  track.enabled=false;
+}
 wsC();
 'serviceWorker' in navigator && navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const uo=()=>{const b=$('ob');if(navigator.onLine)b.classList.remove('on');else{b.classList.add('on');net('','OFFLINE')}};
