@@ -18,10 +18,10 @@ export default{
 export class Room{
   constructor(s,e){
     this.state=s;this.env=e;
-    this.socks=new Map();   // no -> ws
-    this.wsNo=new Map();    // ws -> no
-    this.locs=new Map();    // no -> {lat,lng,acc}
-    this.calls=new Map();   // no -> peerNo
+    this.socks=new Map();
+    this.wsNo=new Map();
+    this.locs=new Map();
+    this.calls=new Map();
   }
   async fetch(req){
     const u=new URL(req.url);
@@ -30,7 +30,7 @@ export class Room{
     if(u.pathname==='/users')return Response.json([...this.socks.keys()]);
     const up=(req.headers.get('Upgrade')||'').toLowerCase();
     if(up!=='websocket')return new Response('Expected WS',{status:426});
-    let pair;try{pair=new WebSocketPair()}catch(e){return new Response('WS fail',{status:500})}
+    let pair;try{pair=new WebSocketPair()}catch(e){return new Response('WS fail: '+e.message,{status:500})}
     const[c,s]=Object.values(pair);s.accept();
     this.send(s,{type:'welcome',t:Date.now()});
     s.addEventListener('message',ev=>{try{this.onMsg(s,ev.data)}catch(e){console.log('err',e.message)}});
@@ -49,26 +49,23 @@ export class Room{
       if(old&&old!==ws){try{old.send(JSON.stringify({type:'force-logout'}));old.close()}catch{}}
       this.socks.set(no,ws);this.wsNo.set(ws,no);
       this.send(ws,{type:'registered',no});this.broadcastOnline();
+      console.log('REG',no,'total',this.socks.size);
       return;
     }
-    // ═══ GPS LOCATION ═══
     if(t==='location'){
       const no=this.wsNo.get(ws);
       if(no){
         const loc={lat:+m.lat,lng:+m.lng,acc:+m.acc||0};
         this.locs.set(no,loc);
         const peerNo=this.calls.get(no);
-        if(peerNo){
-          const peer=this.socks.get(peerNo);
-          if(peer)this.send(peer,{type:'peer-location',lat:loc.lat,lng:loc.lng,acc:loc.acc});
-        }
+        if(peerNo){const peer=this.socks.get(peerNo);if(peer)this.send(peer,{type:'peer-location',lat:loc.lat,lng:loc.lng,acc:loc.acc})}
       }
       return;
     }
     if(t==='call-user'){
       const from=this.wsNo.get(ws),to=cl(m.to),tg=this.socks.get(to);
       if(!from)return this.send(ws,{type:'error',msg:'Daftar dulu'});
-      if(!tg)return this.send(ws,{type:'call-error',msg:`Nomor ${to} tidak online`});
+      if(!tg)return this.send(ws,{type:'call-error',msg:'Nomor '+to+' tidak online'});
       this.calls.set(from,to);this.calls.set(to,from);
       const fromLoc=this.locs.get(from),toLoc=this.locs.get(to);
       this.send(tg,{type:'incoming-call',from,offer:m.sdp,peerLoc:fromLoc||null});
