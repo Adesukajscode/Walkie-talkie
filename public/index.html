@@ -1,630 +1,249 @@
-<!DOCTYPE html><html lang=id><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name=theme-color content=#0a0e17><title>Walkie Talkie</title><style>
-:root{
-  --cy:#00d4ff; --mg:#ff2d95; --lm:#00e676; --yl:#ffb300; --rd:#ff3860;
-  --tx:#eaf0ff; --mu:#7d8ab0; --bg:#070b14; --cd:#101728; --cd2:#0b1220;
-  --bd:#1e2a45; --bd2:#2a3a5c;
-}
+<!DOCTYPE html><html lang=id><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name=theme-color content=#070b14><link rel=manifest href=/manifest.json><title>Walkie</title><style>
+:root{--cy:#00d4ff;--mg:#ff2d95;--lm:#00e676;--yl:#ffb300;--rd:#ff3860;--tx:#eaf0ff;--mu:#7d8ab0;--cd:#101728;--cd2:#0b1220;--bd:#1e2a45}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{height:100%}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
-  color:var(--tx);background:var(--bg);
-  padding:16px;display:flex;align-items:center;justify-content:center;
-  overflow:hidden;overscroll-behavior:none;
-  -webkit-font-smoothing:antialiased;
-}
-.wrap{
-  width:100%;max-width:400px;
-  background:linear-gradient(160deg,var(--cd) 0%,var(--cd2) 100%);
-  border:1px solid var(--bd);border-radius:18px;
-  padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.5);
-}
-h1{
-  font-size:1.05rem;font-weight:700;text-align:center;
-  color:var(--cy);margin-bottom:16px;letter-spacing:2.5px;text-transform:uppercase;
-}
-h1::before{content:'◉ ';color:var(--mg);margin-right:2px}
-
-/* ═══ STATUS BAR ═══ */
-.bar{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  padding:9px 14px;background:rgba(0,0,0,.35);
-  border:1px solid rgba(255,255,255,.04);border-radius:10px;
-  font-size:.75rem;color:var(--mu);margin-bottom:16px;
-  letter-spacing:.3px;min-height:36px;
-}
-.dot{
-  width:8px;height:8px;border-radius:50%;
-  background:var(--rd);flex-shrink:0;transition:.2s;
-}
-.dot.on{background:var(--lm);box-shadow:0 0 8px var(--lm)}
-.dot.wn{background:var(--yl);box-shadow:0 0 8px var(--yl)}
-
-/* ═══ SPINNER ═══ */
-.spin{
-  width:12px;height:12px;flex-shrink:0;
-  border:2px solid rgba(0,212,255,.2);
-  border-top-color:var(--cy);
-  border-radius:50%;
-  animation:sp .7s linear infinite;
-  display:none;
-}
-.spin.on{display:inline-block}
+body{font-family:-apple-system,system-ui,sans-serif;color:var(--tx);background:#070b14;padding:16px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.w{width:100%;max-width:400px;background:linear-gradient(160deg,var(--cd),var(--cd2));border:1px solid var(--bd);border-radius:18px;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+h1{font-size:1.05rem;font-weight:700;text-align:center;color:var(--cy);margin-bottom:16px;letter-spacing:2.5px;text-transform:uppercase}
+.b{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 14px;background:rgba(0,0,0,.35);border-radius:10px;font-size:.75rem;color:var(--mu);margin-bottom:16px;min-height:36px}
+.d{width:8px;height:8px;border-radius:50%;background:var(--rd);transition:.2s}
+.d.o{background:var(--lm);box-shadow:0 0 8px var(--lm)}
+.d.n{background:var(--yl);box-shadow:0 0 8px var(--yl)}
+.s{width:12px;height:12px;border:2px solid rgba(0,212,255,.2);border-top-color:var(--cy);border-radius:50%;animation:sp .7s linear infinite;display:none}
+.s.o{display:inline-block}
 @keyframes sp{to{transform:rotate(360deg)}}
-
-/* ═══ INPUT ═══ */
 .ig{display:flex;gap:8px;margin-bottom:12px}
-input{
-  flex:1;padding:13px 14px;border-radius:11px;
-  border:1px solid var(--bd);background:rgba(0,0,0,.4);
-  color:var(--tx);font-size:1rem;font-family:inherit;
-  outline:none;transition:.18s;min-width:0;
-  -webkit-appearance:none;
-}
+input{flex:1;padding:13px 14px;border-radius:11px;border:1px solid var(--bd);background:rgba(0,0,0,.4);color:var(--tx);font-size:1rem;outline:none;min-width:0}
 input::placeholder{color:var(--mu)}
-input:focus{border-color:var(--cy);background:rgba(0,0,0,.55);box-shadow:0 0 0 3px rgba(0,212,255,.12)}
+input:focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(0,212,255,.12)}
 input:disabled{opacity:.4}
-
-/* ═══ BUTTON ═══ */
-button{
-  padding:13px 18px;border:none;border-radius:11px;
-  font-size:.85rem;font-weight:700;cursor:pointer;
-  font-family:inherit;transition:.15s;
-  touch-action:manipulation;letter-spacing:.5px;
-  flex-shrink:0;text-transform:uppercase;
-  -webkit-appearance:none;
-}
-button:disabled{opacity:.35;cursor:not-allowed}
+button{padding:13px 18px;border:none;border-radius:11px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0}
+button:disabled{opacity:.35}
 button:not(:disabled):active{transform:scale(.96)}
 .p{background:linear-gradient(135deg,#0e6f94,#00b8d4);color:#fff}
-.s{background:linear-gradient(135deg,#008f52,#00e676);color:#001a0d}
-.d{background:linear-gradient(135deg,#c41e3a,#ff3860);color:#fff}
-.w{background:linear-gradient(135deg,#c47f00,#ffb300);color:#241800}
-
-/* ═══ STATUS TEXT ═══ */
-.st{
-  text-align:center;padding:11px 14px;
-  background:rgba(0,0,0,.3);border-radius:10px;
-  font-size:.8rem;color:var(--mu);margin:8px 0;
-  word-break:break-word;line-height:1.4;
-}
-.st.err{color:var(--rd);background:rgba(255,56,96,.1)}
-.st.ok{color:var(--lm);background:rgba(0,230,118,.08)}
-#ms{color:var(--cy);font-weight:600;letter-spacing:.3px}
-#ol{font-size:.72rem}
-
-/* ═══ PTT BUTTON ═══ */
-.ptt{
-  width:100%;padding:22px;
-  font-size:.95rem;font-weight:800;
-  border-radius:60px;margin-top:14px;
-  color:var(--lm);
-  background:rgba(0,230,118,.1);
-  border:2px solid var(--lm);
-  letter-spacing:2px;transition:.15s;
-  touch-action:none;-webkit-touch-callout:none;
-  box-shadow:0 0 0 rgba(0,230,118,.4);
-}
-.ptt:not(:disabled):active,.ptt.on{
-  background:rgba(255,45,149,.15);
-  border-color:var(--mg);color:var(--mg);
-  box-shadow:0 0 24px rgba(255,45,149,.5);
-}
-
-/* ═══ NOTIF ═══ */
-.nf{
-  padding:16px;margin:12px 0;
-  background:rgba(255,179,0,.08);
-  border:1px solid var(--yl);border-radius:12px;
-  text-align:center;display:none;
-}
-.nf.on{display:block}
-.nf p{margin-bottom:12px;font-size:.9rem;color:var(--yl)}
-.nf b{color:var(--cy)}
-.nf button{margin:4px 3px 0;min-width:100px}
-
-/* ═══ VU METER ═══ */
-.vw{height:8px;background:rgba(0,0,0,.5);border-radius:4px;overflow:hidden;margin:10px 0}
-.vu{
-  height:100%;width:0;
-  background:linear-gradient(90deg,var(--lm),var(--cy),var(--mg));
-  transition:width .06s linear;
-}
-#ah{font-size:.7rem;color:var(--mu);text-align:center;margin:4px 0 8px;letter-spacing:.3px}
-
-/* ═══ LAYOUT ═══ */
+.g{background:linear-gradient(135deg,#008f52,#00e676);color:#001a0d}
+.r{background:linear-gradient(135deg,#c41e3a,#ff3860);color:#fff}
+.y{background:linear-gradient(135deg,#c47f00,#ffb300);color:#241800}
+.t{text-align:center;padding:11px;background:rgba(0,0,0,.3);border-radius:10px;font-size:.8rem;color:var(--mu);margin:8px 0;word-break:break-word}
+.t.e{color:var(--rd);background:rgba(255,56,96,.1)}
+.t.k{color:var(--lm);background:rgba(0,230,118,.08)}
+#m{color:var(--cy);font-weight:600}
+#o{font-size:.72rem}
+.ptt{width:100%;padding:22px;font-size:.95rem;font-weight:800;border-radius:60px;margin-top:14px;color:var(--lm);background:rgba(0,230,118,.1);border:2px solid var(--lm);letter-spacing:2px;touch-action:none;-webkit-touch-callout:none}
+.ptt.on{background:rgba(255,45,149,.15);border-color:var(--mg);color:var(--mg);box-shadow:0 0 24px rgba(255,45,149,.5)}
+.n{padding:16px;margin:12px 0;background:rgba(255,179,0,.08);border:1px solid var(--yl);border-radius:12px;text-align:center;display:none}
+.n.on{display:block}
+.n p{margin-bottom:12px;font-size:.9rem;color:var(--yl)}
+.n b{color:var(--cy)}
+.n button{margin:4px 3px 0;min-width:100px}
 .h{display:none!important}
-.r{display:flex;gap:8px;margin-top:10px}
-.r button{flex:1}
-
-/* ═══ TOAST ═══ */
-.ts{
-  position:fixed;top:16px;left:50%;
-  transform:translateX(-50%) translateY(-100px);
-  background:#1a2030;border:1px solid var(--bd);
-  padding:12px 18px;border-radius:10px;
-  font-size:.8rem;z-index:999;
-  transition:.3s cubic-bezier(.2,.9,.3,1.4);
-  max-width:90vw;text-align:center;pointer-events:none;
-  box-shadow:0 8px 32px rgba(0,0,0,.6);
-}
+.v{height:8px;background:rgba(0,0,0,.5);border-radius:4px;overflow:hidden;margin:10px 0}
+.vu{height:100%;width:0;background:linear-gradient(90deg,var(--lm),var(--cy),var(--mg));transition:width .06s linear}
+#a{font-size:.7rem;color:var(--mu);text-align:center;margin:4px 0 8px}
+.row{display:flex;gap:8px;margin-top:10px}
+.row button{flex:1}
+.ts{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-100px);background:#1a2030;border:1px solid var(--bd);padding:12px 18px;border-radius:10px;font-size:.8rem;z-index:999;transition:.3s;max-width:90vw;text-align:center;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.6)}
 .ts.on{transform:translateX(-50%) translateY(0)}
-.ts.err{border-color:var(--rd);color:var(--rd)}
-.ts.ok{border-color:var(--lm);color:var(--lm)}
-.info-panel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}
-.info-box{background:rgba(0,0,0,.35);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;text-align:center}
-.info-box .lbl{font-size:.6rem;color:var(--mu);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px}
-.info-box .val{font-size:.95rem;font-weight:700;color:var(--cy);font-family:'Courier New',monospace;letter-spacing:.5px;display:block}
-.info-box .unit{font-size:.65rem;color:var(--mu);font-weight:400;margin-left:2px}
-.info-box.accent .val{color:var(--mg)}
+.ts.e{border-color:var(--rd);color:var(--rd)}
+.ts.k{border-color:var(--lm);color:var(--lm)}
+.ip{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}
+.ib{background:rgba(0,0,0,.35);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;text-align:center}
+.ib .l{font-size:.6rem;color:var(--mu);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px}
+.ib .v2{font-size:.95rem;font-weight:700;color:var(--cy);font-family:monospace;display:block}
+.ib .u{font-size:.65rem;color:var(--mu);font-weight:400;margin-left:2px}
+.ib.m .v2{color:var(--mg)}
+.ob{position:fixed;top:0;left:0;right:0;background:linear-gradient(90deg,#c41e3a,#ff3860);color:#fff;text-align:center;font-size:.7rem;font-weight:700;padding:5px;letter-spacing:1px;text-transform:uppercase;z-index:1000;transform:translateY(-100%);transition:.3s}
+.ob.on{transform:translateY(0)}
 </style></head><body>
+<div class=ob id=ob>⚠️ MODE OFFLINE</div>
 <div class=ts id=ts></div>
 <audio id=ra autoplay playsinline></audio>
-<div class=wrap>
+<div class=w>
 <h1>Walkie Talkie</h1>
-<div class=bar><span class=spin id=spin></span><span class=dot id=dot></span><span id=nt>Menghubungkan...</span></div>
+<div class=b><span class=s id=sp></span><span class=d id=dt></span><span id=nt>Menghubungkan...</span></div>
 <div id=rs><div class=ig><input type=tel id=mn placeholder="Nomor HP (08...)" inputmode=numeric autocomplete=off maxlength=15><button class=p id=rb onclick=R() disabled>Daftar</button></div></div>
 <div id=cs class=h>
-<div class=st id=ms>-</div>
-<div class=st id=ol>Online: -</div>
-<div class=ig><input type=tel id=tn placeholder="Nomor tujuan" inputmode=numeric autocomplete=off maxlength=15><button class=s id=cb onclick=C()>Panggil</button></div>
-<div class=info-panel>
-<div class=info-box><span class=lbl>📍 Jarak</span><span class=val id=distVal>—<span class=unit id=distUnit></span></span></div>
-<div class=info-box accent><span class=lbl>🎵 Frekuensi</span><span class=val id=freqVal>—<span class=unit>Hz</span></span></div>
+<div class=t id=m>-</div>
+<div class=t id=o>Online: -</div>
+<div class=ig><input type=tel id=tn placeholder="Nomor tujuan" inputmode=numeric autocomplete=off maxlength=15><button class=g id=cb onclick=C()>Panggil</button></div>
+<div class=ip>
+<div class=ib><span class=l>📍 Jarak</span><span class=v2 id=dv>—<span class=u id=du></span></span></div>
+<div class="ib m"><span class=l>🎵 Freq</span><span class=v2 id=fv>—<span class=u>Hz</span></span></div>
 </div>
-<div class=vw><div class=vu id=vu></div></div>
-<div id=ah>Level suara</div>
-<button class=ptt id=pb disabled ontouchstart="startTalk(event)" ontouchend="stopTalk(event)" ontouchcancel="stopTalk(event)" onmousedown="startTalk(event)" onmouseup="stopTalk(event)" onmouseleave="stopTalk(event)">TAHAN UNTUK BICARA</button>
-<div class=r><button class=d onclick=E()>Akhiri</button><button class=w id=htb onclick=H()>📻 HT ON</button></div>
-<div class=r><button class=p onclick=L()>Ganti Nomor</button></div>
+<div class=v><div class=vu id=vu></div></div>
+<div id=a>Level suara</div>
+<button class=ptt id=pb disabled ontouchstart="ST(event)" ontouchend="SP(event)" ontouchcancel="SP(event)" onmousedown="ST(event)" onmouseup="SP(event)" onmouseleave="SP(event)">TAHAN UNTUK BICARA</button>
+<div class=row><button class=r onclick=E()>Akhiri</button><button class=y onclick=U(1)>🔊 Audio</button></div>
+<div class=row><button class=p onclick=L()>Ganti Nomor</button></div>
 </div>
-<div class=nf id=nf><p>📞 <b id=ci></b> memanggil...</p><button class=s onclick=A()>Terima</button><button class=d onclick=X()>Tolak</button></div>
+<div class=n id=n><p>📞 <b id=ci></b> memanggil...</p><button class=g onclick=A()>Terima</button><button class=r onclick=X()>Tolak</button></div>
 </div>
 <script>
 'use strict';
 const $=i=>document.getElementById(i),cl=n=>String(n||'').replace(/\D/g,''),lg=(...a)=>console.log('[WT]',...a);
-let tt=null;const ts=(m,t='')=>{const e=$('ts');e.textContent=m;e.className='ts on '+t;clearTimeout(tt);tt=setTimeout(()=>e.className='ts '+t,3000)};
-const WS_URL=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
-let ws=null,wsReady=false,retry=0,pingT=null;
-let my=localStorage.getItem('myNo')||'',tg='',caller=0,pc=null,ls=null,rst=null,pend=[],rds=0,mo=0,raf=null,rp=0,rt=null,micMuted=true;
-let pendingOffer=null,pendingFrom=null,htChain=null,htOn=true;
+let tt;const ts=(m,c='')=>{const e=$('ts');e.textContent=m;e.className='ts on '+c;clearTimeout(tt);tt=setTimeout(()=>e.className='ts '+c,3000)};
+const WU=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
+let ws,wr=0,rt=0,pt=0,my=localStorage.getItem('myNo')||'',tg='',caller=0,pc,ls,rs,pend=[],rds=0,mo=0,raf,rp=0,rT,po=null,pf=null,ac,an,dt=null;
 const ra=$('ra');ra.volume=1;ra.muted=false;
-const net=(s,t)=>{$('dot').className='dot'+(s==='ok'?' on':(s==='w'?' wn':''));$('spin').className='spin'+(s==='ok'?'':' on');$('nt').textContent=t;$('rb').disabled=s!=='ok';$('cb').disabled=s!=='ok'};
-function rbReset(){$('rb').textContent='Daftar';$('rb').disabled=0;$('mn').disabled=0}
+const net=(s,t)=>{$('dt').className='d'+(s==='ok'?' o':(s==='w'?' n':''));$('sp').className='s'+(s==='ok'?'':' o');$('nt').textContent=t;$('rb').disabled=s!=='ok';$('cb').disabled=s!=='ok'};
+const rbR=()=>{$('rb').textContent='Daftar';$('rb').disabled=0;$('mn').disabled=0};
 fetch('/prewarm').catch(()=>{});
-function makeClipCurve(k,a){
-  a=(a===undefined)?0.4:a;
-  const n=4096,c=new Float32Array(n),norm=Math.atan(k);
-  for(let i=0;i<n;i++){
-    const x=(i*2)/n-1;
-    const kk=(x>=0)?k:k*(1-a);
-    c[i]=Math.atan(x*kk)/norm;
-  }
-  return c;
-}
-function makeNoiseBuf(sec){
-  const sr=ac.sampleRate,b=ac.createBuffer(1,sr*sec,sr),d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-  return b;
-}
-function playSquelch(dur=0.22,lvl=0.14){
-  if(!ac||!htOn)return;
-  try{
-    const src=ac.createBufferSource();src.buffer=makeNoiseBuf(dur);
-    const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2400;bp.Q.value=1.5;
-    const g=ac.createGain();const now=ac.currentTime;
-    g.gain.setValueAtTime(lvl,now);
-    g.gain.exponentialRampToValueAtTime(0.0001,now+dur);
-    src.connect(bp).connect(g).connect(ac.destination);
-    src.start(now);src.stop(now+dur+0.02);
-  }catch(e){}
-}
 
-// ═══════ FIX #1: Promise-guarded gm() → cegah double getUserMedia ═══════
-let lsProm=null;
+let lp=null;
 async function gm(){
-  if(ls)return ls;
-  if(lsProm)return lsProm;
-  lsProm=(async()=>{
-    if(!navigator.mediaDevices)throw Error('Browser tidak dukung mic');
-    lg('🎤 getUserMedia...');
-    const tried=[
+  if(ls)return ls;if(lp)return lp;
+  lp=(async()=>{
+    if(!navigator.mediaDevices)throw Error('No mic API');
+    const tries=[
       {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1,sampleRate:48000},video:false},
       {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false},
-      {audio:{echoCancellation:true},video:false},
       {audio:true,video:false}
     ];
-    let st,lastErr;
-    for(const c of tried){
-      try{st=await navigator.mediaDevices.getUserMedia(c);lg('✅ getUserMedia OK:',JSON.stringify(c.audio));break}
-      catch(e){lastErr=e;lg('⚠️ constraint gagal:',e.name,e.message)}
-    }
-    if(!st)throw lastErr||Error('Semua constraint mic gagal');
-    ls=st;
-    st.getAudioTracks().forEach(x=>x.enabled=false);
-    const t=st.getAudioTracks()[0];
-    const g=t.getSettings();
-    lg('🎤 MIC OK | label=',t.label,'| enabled=',t.enabled,'| EC=',g.echoCancellation,'| NS=',g.noiseSuppression,'| SR=',g.sampleRate);
+    let st,err;
+    for(const c of tries){try{st=await navigator.mediaDevices.getUserMedia(c);break}catch(e){err=e}}
+    if(!st)throw err;
+    ls=st;st.getAudioTracks().forEach(t=>t.enabled=false);
+    const t=st.getAudioTracks()[0],g=t.getSettings();
+    lg('🎤 MIC OK EC=',g.echoCancellation,'NS=',g.noiseSuppression);
     return st;
-  })().catch(e=>{lsProm=null;throw e});
-  return lsProm;
+  })().catch(e=>{lp=null;throw e});
+  return lp;
 }
-gm().catch(()=>lg('pre-mic butuh gesture'));
-document.addEventListener('touchstart',async()=>{if(ra.paused)ra.play().catch(()=>{});if(!ls)gm().catch(()=>{})},{once:true,passive:true});
-document.addEventListener('click',async()=>{if(ra.paused)ra.play().catch(()=>{});if(!ls)gm().catch(()=>{})},{once:true});
+gm().catch(()=>lg('pre-mic need gesture'));
+document.addEventListener('touchstart',()=>{if(ra.paused)ra.play().catch(()=>{});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});if(!ls)gm().catch(()=>{})},{once:true,passive:true});
+document.addEventListener('click',()=>{if(ra.paused)ra.play().catch(()=>{});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});if(!ls)gm().catch(()=>{})},{once:true});
 
-// ═══════ FIX #2: Explicit transceiver sendrecv → cegah 1-arah ═══════
 function cp(){
-  if(pc){lg('♻️ PC reuse');return pc}
-  lg('🆕 createPC');
-  if(!ls||!ls.getAudioTracks().length){lg('❌❌❌ TIDAK ADA AUDIO TRACK!');return null}
-  const track=ls.getAudioTracks()[0];
-  pc=new RTCPeerConnection({
-    iceServers:[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun1.l.google.com:19302'}],
-    iceCandidatePoolSize:10,
-    bundlePolicy:'max-bundle',
-    rtcpMuxPolicy:'require'
-  });
-  // ✅ CARA KLASIK & TERUJI: addTrack + MediaStream (synchronous, tidak ada race)
-  const stream=new MediaStream([track]);
-  const sender=pc.addTrack(track,stream);
-  lg('✅ addTrack | enabled=',track.enabled,'| sender=',!!sender);
-  // Codec: prefer Opus
-  try{
-    const caps=RTCRtpSender.getCapabilities('audio');
-    if(caps&&caps.codecs){
-      const opus=caps.codecs.filter(c=>c.mimeType.toLowerCase()==='audio/opus');
-      const rest=caps.codecs.filter(c=>c.mimeType.toLowerCase()!=='audio/opus');
-      const tr=pc.getTransceivers()[0];
-      if(tr&&tr.setCodecPreferences)tr.setCodecPreferences([...opus,...rest]);
-    }
-  }catch(e){lg('codec pref err',e.message)}
+  if(pc)return pc;
+  if(!ls||!ls.getAudioTracks().length){lg('❌ NO TRACK');return null}
+  const tr=ls.getAudioTracks()[0];
+  pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun1.l.google.com:19302'}],iceCandidatePoolSize:10,bundlePolicy:'max-bundle',rtcpMuxPolicy:'require'});
+  pc.addTrack(tr,new MediaStream([tr]));
+  try{const c=RTCRtpSender.getCapabilities('audio');if(c&&c.codecs){const o=c.codecs.filter(x=>x.mimeType.toLowerCase()==='audio/opus'),r=c.codecs.filter(x=>x.mimeType.toLowerCase()!=='audio/opus');const tt=pc.getTransceivers()[0];if(tt&&tt.setCodecPreferences)tt.setCodecPreferences([...o,...r])}}catch(e){}
   pc.ontrack=e=>{
-    lg('📥 ONTRACK | kind=',e.track.kind,'| enabled=',e.track.enabled);
-    if(e.streams&&e.streams[0])rst=e.streams[0];
-    else{if(!rst)rst=new MediaStream();rst.addTrack(e.track)}
-    // ⚠️ ra TIDAK diset ke rst — akan di-replace oleh DSP stream
-    ra.muted=true;
-    if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
-    const build=()=>{
-      if(!ac||htChain)return;
-      try{
-        if(!an){an=ac.createAnalyser();an.fftSize=256}
-        const src=ac.createMediaStreamSource(rst);
-        const inG=ac.createGain();inG.gain.value=3.2;
-        const agc=ac.createDynamicsCompressor();
-        agc.threshold.value=-32;agc.knee.value=3;agc.ratio.value=14;
-        agc.attack.value=0.001;agc.release.value=0.08;
-        // Bandpass lebih tipis (400-2800)
-        const hp1=ac.createBiquadFilter();hp1.type='highpass';hp1.frequency.value=400;hp1.Q.value=0.8;
-        const hp2=ac.createBiquadFilter();hp2.type='highpass';hp2.frequency.value=400;hp2.Q.value=0.8;
-        const lp1=ac.createBiquadFilter();lp1.type='lowpass';lp1.frequency.value=2800;lp1.Q.value=0.8;
-        const lp2=ac.createBiquadFilter();lp2.type='lowpass';lp2.frequency.value=2800;lp2.Q.value=0.8;
-        // Presence tajam — SEMBER
-        const pk=ac.createBiquadFilter();pk.type='peaking';pk.frequency.value=2000;pk.gain.value=12;pk.Q.value=1.8;
-        // Honk cut dalam
-        const cut=ac.createBiquadFilter();cut.type='peaking';cut.frequency.value=700;cut.gain.value=-8;cut.Q.value=2.2;
-        // Pre-emphasis
-        const pre=ac.createBiquadFilter();pre.type='highshelf';pre.frequency.value=1400;pre.gain.value=6;
-        // Asymmetric clip + oversample NONE = aliasing gritty + latency rendah
-        const clip=ac.createWaveShaper();clip.curve=makeClipCurve(11,0.4);clip.oversample='none';
-        const out=ac.createGain();out.gain.value=2.3;
-        // ⚡ DEST: DSP di-route ke <audio> via MediaStream → AEC bekerja → NO ECHO
-        const dest=ac.createMediaStreamDestination();
-        // Noise floor
-        const ns=ac.createBufferSource();ns.buffer=makeNoiseBuf(3);ns.loop=true;
-        const nf=ac.createBiquadFilter();nf.type='bandpass';nf.frequency.value=2400;nf.Q.value=0.7;
-        const ng=ac.createGain();ng.gain.value=0.008;
-        // Chain utama → dest
-        src.connect(inG).connect(agc).connect(hp1).connect(hp2).connect(lp1).connect(lp2)
-           .connect(pk).connect(cut).connect(pre).connect(clip).connect(out);
-        out.connect(dest);
-        // VU tap (tidak ke speaker)
-        out.connect(an);
-        ns.connect(nf).connect(ng).connect(out);
-        ns.start();
-        // Set ra ke DSP output
-        ra.srcObject=dest.stream;
-        ra.muted=false;ra.volume=1;
-        const go=()=>ra.play().then(()=>lg('🔊 DSP→ra OK')).catch(err=>{lg('ra play fail',err.message);try{ra.muted=true;ra.play().then(()=>{ra.muted=false})}catch(_){}});
-        go();setTimeout(go,300);
-        htChain={src,inG,agc,hp1,hp2,lp1,lp2,pk,cut,pre,clip,out,dest,ns,ng};
-        lg('📻 HT CHAIN AKTIF (DSP→MediaStream)');
-        $('ah').textContent='📻 HT MODE — Mendengarkan';
-        // VU loop
-        cancelAnimationFrame(raf);
-        const d=new Uint8Array(an.frequencyBinCount);
-        const tk=()=>{an.getByteFrequencyData(d);let x=0;for(let i=0;i<d.length;i++)x+=d[i];$('vu').style.width=Math.min(100,x/d.length*2.5)+'%';raf=requestAnimationFrame(tk)};
-        tk();
-      }catch(err){lg('HT chain err',err.message)}
-    };
-    if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(_){}}
-    if(ac&&ac.state==='suspended')ac.resume().then(build).catch(build);
-    else build();
-    setTimeout(build,200);setTimeout(build,800);
-    e.track.onmute=()=>{lg('📥 remote MUTED → squelch');playSquelch(0.2,0.12)};
-    e.track.onunmute=()=>{lg('📥 remote UNMUTED');playSquelch(0.04,0.05)};
+    lg('📥 ONTRACK',e.track.kind,'en=',e.track.enabled);
+    if(e.streams&&e.streams[0])rs=e.streams[0];else{if(!rs)rs=new MediaStream();rs.addTrack(e.track)}
+    ra.srcObject=rs;ra.muted=false;ra.volume=1;
+    const p=()=>ra.play().then(()=>{$('a').textContent='🎧 Mendengarkan';lg('🔊 play OK')}).catch(err=>{lg('play fail',err.message);$('a').textContent='⚠️ Tap Audio';try{ra.muted=true;ra.play().then(()=>ra.muted=false)}catch(_){}});
+    p();setTimeout(p,300);setTimeout(p,1000);
+    mt(rs);
+    e.track.onunmute=()=>lg('📥 UNMUTED');
+    e.track.onmute=()=>lg('📥 MUTED');
   };
-  pc.onicecandidate=e=>{if(e.candidate)wsSend({type:'ice-candidate',to:tg,candidate:e.candidate})};
+  pc.onicecandidate=e=>{if(e.candidate)wsS({type:'ice-candidate',to:tg,candidate:e.candidate})};
   pc.oniceconnectionstatechange=()=>lg('ICE:',pc.iceConnectionState);
   pc.onconnectionstatechange=()=>{
     lg('PC:',pc.connectionState);
     if(pc.connectionState==='connected'){
-      $('ms').textContent='LIVE: '+tg;$('ms').className='st ok';
-      $('pb').disabled=false;
-      if(!$('pb').classList.contains('on')){$('pb').textContent='TAHAN UNTUK BICARA';micMuted=true;if(ls)ls.getAudioTracks().forEach(t=>t.enabled=false)}
-      ts('✅ Tersambung','ok');startDistLoop();
-      // ══════ BILATERAL CHECK ══════
-      setTimeout(()=>{
-        lg('══════ BILATERAL CHECK ══════');
-        const trs=pc.getTransceivers();
-        trs.forEach((tr,i)=>lg(`  tr[${i}] dir=${tr.direction} cur=${tr.currentDirection} mid=${tr.mid}`));
-        const snds=pc.getSenders().filter(x=>x.track);
-        const rcvs=pc.getReceivers().filter(x=>x.track);
-        lg('📤 SENDERS:',snds.length?snds.map(x=>x.track.kind+':en='+x.track.enabled).join(', '):'❌ NONE');
-        lg('📥 RECEIVERS:',rcvs.length?rcvs.map(x=>x.track.kind+':en='+x.track.enabled).join(', '):'❌ NONE');
-        if(!snds.length)lg('❌❌❌ KIRIM GAGAL — tidak ada sender track!');
-        if(!rcvs.length)lg('❌❌❌ TERIMA GAGAL — tidak ada receiver track!');
-        lg('═════════════════════════════');
-      },500);
-    } else if(pc.connectionState==='failed'){$('ms').textContent='Koneksi gagal';try{pc.restartIce()}catch(_){}}
-    else if(pc.connectionState==='disconnected')$('ms').textContent='Terputus sementara';
+      $('m').textContent='LIVE: '+tg;$('m').className='t k';$('pb').disabled=false;
+      if(!$('pb').classList.contains('on')){$('pb').textContent='TAHAN UNTUK BICARA';if(ls)ls.getAudioTracks().forEach(t=>t.enabled=false)}
+      ts('✅ Tersambung','k');startDist();
+      setTimeout(()=>{const s=pc.getSenders().filter(x=>x.track),r=pc.getReceivers().filter(x=>x.track);lg('📤',s.length?s.map(x=>x.track.kind).join(','):'NONE','📥',r.length?r.map(x=>x.track.kind).join(','):'NONE')},400);
+    }else if(pc.connectionState==='failed'){$('m').textContent='Gagal';try{pc.restartIce()}catch(_){}}
+    else if(pc.connectionState==='disconnected')$('m').textContent='Terputus';
   };
   return pc;
 }
-function prewarmPC(){if(ls&&!pc){cp();lg('♨️ PC pre-warmed')}}
-async function fc(){if(!pc||!rds)return;while(pend.length){const c=pend.shift();try{await pc.addIceCandidate(c)}catch(e){}}}
-let ac=null,an=null;
+const pw=()=>{if(ls&&!pc){cp();lg('♨️ prewarmed')}};
+async function fc(){if(!pc||!rds)return;while(pend.length){try{await pc.addIceCandidate(pend.shift())}catch(e){}}}
 function mt(s){
-  try{
-    if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch{return}}
-    if(ac.state==='suspended')ac.resume().catch(()=>{});
-    if(!an){an=ac.createAnalyser();an.fftSize=256}
-    ac.createMediaStreamSource(s).connect(an); // HANYA analyser, TIDAK ke destination → tidak echo
-  }catch(e){return}
-  const d=new Uint8Array(an.frequencyBinCount);cancelAnimationFrame(raf);
-  let fqTick=0;
-        const tk=()=>{an.getByteFrequencyData(d);let x=0;for(let i=0;i<d.length;i++)x+=d[i];$('vu').style.width=Math.min(100,x/d.length*2.5)+'%';
-          if((fqTick++&3)===0){const r=computeFreq(d);updateFreqUI(r.hz,r.maxVal)}
-          raf=requestAnimationFrame(tk)};tk();
+  try{if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch{return}}if(ac.state==='suspended')ac.resume().catch(()=>{});if(!an){an=ac.createAnalyser();an.fftSize=256}ac.createMediaStreamSource(s).connect(an)}catch(e){return}
+  const d=new Uint8Array(an.frequencyBinCount);cancelAnimationFrame(raf);let k=0;
+  const tk=()=>{an.getByteFrequencyData(d);let x=0;for(let i=0;i<d.length;i++)x+=d[i];$('vu').style.width=Math.min(100,x/d.length*2.5)+'%';
+    if((k++&3)===0){let mv=0,mb=0;for(let i=1;i<d.length;i++)if(d[i]>mv){mv=d[i];mb=i}const hz=mb*ac.sampleRate/an.fftSize,fv=$('fv');if(mv<15)fv.firstChild.textContent='—';else{fv.firstChild.textContent=hz<1000?hz.toFixed(0):(hz/1000).toFixed(2);fv.querySelector('.u').textContent=hz<1000?'Hz':'kHz'}}
+    raf=requestAnimationFrame(tk)};tk();
 }
-// ═══ JARAK via RTT ═══
-let distTimer=null,lastRtt=0;
-async function updateDistance(){
+async function ud(){
   if(!pc||pc.connectionState!=='connected')return;
-  try{
-    const stats=await pc.getStats();
-    let rtt=null,localCand=null,remoteCand=null;
-    stats.forEach(r=>{
-      if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.nominated){
-        if(r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime;
-      }
-      if(r.type==='local-candidate')localCand=r;
-      if(r.type==='remote-candidate')remoteCand=r;
-    });
-    if(rtt==null){
-      // fallback: cari candidate-pair apapun
-      stats.forEach(r=>{if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime});
-    }
-    if(rtt!=null&&rtt>0){
-      // Jarak estimasi: RTT/2 × kecepatan propagasi
-      // Fiber ~200,000 km/s; udara ~300,000 km/s → rata-rata ~200,000 km/s
-      const c=200000; // km/s
-      const sec=rtt/2;
-      let km=sec*c;
-      // Kurangi overhead prosesing ~5ms → setengah nilai jadi lebih realistis
-      km=Math.max(0,km-(0.005*c/2));
-      let txt,unit;
-      if(km<1){txt=(km*1000).toFixed(0);unit=' m'}
-      else if(km<1000){txt=km.toFixed(1);unit=' km'}
-      else{txt=(km/1000).toFixed(2);unit=' Mm'}
-      const dv=$('distVal'),du=$('distUnit');
-      if(dv&&du){dv.firstChild.textContent=txt;du.textContent=unit}
-      lastRtt=rtt;
-      lg('📍 RTT=',(rtt*1000).toFixed(1),'ms → jarak≈',txt+unit);
-    } else {
-      // RTT belum tersedia, tampilkan '—'
-      const dv=$('distVal');if(dv)dv.firstChild.textContent='—';
-    }
+  try{const s=await pc.getStats();let rtt=null;
+    s.forEach(r=>{if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.nominated&&r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime});
+    if(rtt==null)s.forEach(r=>{if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime});
+    if(rtt>0){const c=200000;let km=Math.max(0,(rtt/2)*c-(0.005*c/2));let txt,u;
+      if(km<1){txt=(km*1000).toFixed(0);u=' m'}else if(km<1000){txt=km.toFixed(1);u=' km'}else{txt=(km/1000).toFixed(2);u=' Mm'}
+      $('dv').firstChild.textContent=txt;$('du').textContent=u}
   }catch(e){}
 }
-function startDistLoop(){
-  clearInterval(distTimer);
-  distTimer=setInterval(updateDistance,1500);
-  setTimeout(updateDistance,500);
+const startDist=()=>{clearInterval(dt);dt=setInterval(ud,1500);setTimeout(ud,500)};
+const stopDist=()=>{clearInterval(dt);dt=null;const d=$('dv');if(d)d.firstChild.textContent='—'};
+function wsC(){
+  lg('WS->',WU);net('w','Menghubungkan...');
+  try{ws=new WebSocket(WU)}catch(e){net('','LINK ERROR');setTimeout(wsC,1500);return}
+  ws.onopen=()=>{wr=1;rt=0;lg('✅ ws OPEN');net('ok','Online');
+    if(my){wsS({type:'register',no:my});rp=1;clearTimeout(rT);rT=setTimeout(()=>{if(rp){ts('Timeout','e');rp=0;rbR()}},8e3)}
+    clearInterval(pt);pt=setInterval(()=>wsS({type:'ping'}),20000)};
+  ws.onmessage=e=>{try{om(JSON.parse(e.data))}catch(err){lg('parse',err)}};
+  ws.onclose=e=>{wr=0;clearInterval(pt);lg('ws CLOSE',e.code);net('w','Menyambung ulang...');retry++;setTimeout(wsC,Math.min(800*retry,4000))};
+  ws.onerror=()=>{lg('ws ERR');net('','LINK ERROR')};
 }
-function stopDistLoop(){
-  clearInterval(distTimer);distTimer=null;
-  const dv=$('distVal');if(dv)dv.firstChild.textContent='—';
+const wsS=o=>{if(ws&&ws.readyState===1){try{ws.send(JSON.stringify(o))}catch(e){}}};
+function om(m){
+  const t=m.type;if(t==='pong'||t==='welcome')return;lg('<-',t);
+  if(t==='registered'){rp=0;clearTimeout(rT);my=m.no;localStorage.setItem('myNo',m.no);$('rs').classList.add('h');$('cs').classList.remove('h');$('m').textContent='ID: '+m.no;$('m').className='t k';rbR();ts('✅ '+m.no,'k');gm().then(()=>pw()).catch(()=>{})}
+  else if(t==='error'){rp=0;clearTimeout(rT);rbR();ts('❌ '+m.msg,'e')}
+  else if(t==='online')$('o').textContent='Online: '+(m.list.join(', ')||'-');
+  else if(t==='force-logout'){ts('Nomor dipakai di HP lain','e');setTimeout(L,1500)}
+  else if(t==='incoming-call'){ra.play().catch(()=>{});po=m.offer;pf=m.from;$('ci').textContent=m.from;$('n').classList.add('on');navigator.vibrate&&navigator.vibrate([200,100,200]);gm().then(()=>pw()).catch(()=>{})}
+  else if(t==='call-rejected'){$('m').textContent='Ditolak';cl_()}
+  else if(t==='call-ended'){$('m').textContent='Selesai';cl_()}
+  else if(t==='call-error'){ts(m.msg,'e');$('m').textContent=m.msg;$('m').className='t e'}
+  else if(t==='answer')oa(m);
+  else if(t==='ice-candidate')oi(m);
 }
-
-// ═══ FREKUENSI DOMINAN (sudah pakai analyser existing) ═══
-function computeFreq(d){
-  // Cari bin dengan magnitude tertinggi
-  let maxVal=0,maxBin=0;
-  for(let i=1;i<d.length;i++){if(d[i]>maxVal){maxVal=d[i];maxBin=i}}
-  // Bin → Hz: sampleRate/fftSize × bin
-  const sr=ac?ac.sampleRate:48000;
-  const hz=maxBin*sr/(an.fftSize);
-  return {hz,maxVal};
-}
-function updateFreqUI(hz,mag){
-  const fv=$('freqVal');if(!fv)return;
-  if(mag<15){fv.firstChild.textContent='—';return}
-  fv.firstChild.textContent=hz<1000?hz.toFixed(0):(hz/1000).toFixed(2);
-  // Kalau >=1000, ganti unit ke kHz
-  const un=fv.querySelector('.unit');
-  if(un)un.textContent=hz<1000?'Hz':'kHz';
-}
-
-function wsConn(){
-  lg('WS ->',WS_URL);net('w','Menghubungkan...');
-  try{ws=new WebSocket(WS_URL)}catch(e){net('','LINK ERROR');setTimeout(wsConn,1500);return}
-  ws.onopen=()=>{
-    wsReady=true;retry=0;lg('✅ ws OPEN');net('ok','Online');
-    if(my){wsSend({type:'register',no:my});rp=1;clearTimeout(rt);rt=setTimeout(()=>{if(rp){ts('Timeout','err');rp=0;rbReset()}},8e3)}
-    clearInterval(pingT);pingT=setInterval(()=>wsSend({type:'ping'}),20000);
-  };
-  ws.onmessage=e=>{try{onMsg(JSON.parse(e.data))}catch(err){lg('parse',err)}};
-  ws.onclose=ev=>{wsReady=false;clearInterval(pingT);lg('ws CLOSED',ev.code);net('w','Menyambung ulang...');retry++;setTimeout(wsConn,Math.min(800*retry,4000))};
-  ws.onerror=()=>{lg('ws ERROR');net('','LINK ERROR')};
-}
-function wsSend(o){if(ws&&ws.readyState===1){try{ws.send(JSON.stringify(o))}catch(e){}}else lg('ws not ready',o.type)}
-function onMsg(m){
-  const t=m.type;
-  if(t==='pong'||t==='welcome')return;
-  lg('<-',t);
-  if(t==='registered'){
-    rp=0;clearTimeout(rt);
-    my=m.no;localStorage.setItem('myNo',m.no);
-    $('rs').classList.add('h');$('cs').classList.remove('h');
-    $('ms').textContent='ID: '+m.no;$('ms').className='st ok';
-    rbReset();ts('✅ '+m.no,'ok');
-    // ⚡ PREWARM AGGRESSIF: siapkan mic + PC segera
-    gm().then(()=>prewarmPC()).catch(()=>{});
-  }
-  else if(t==='error'){rp=0;clearTimeout(rt);rbReset();ts('❌ '+m.msg,'err')}
-  else if(t==='online'){$('ol').textContent='Online: '+(m.list.join(', ')||'-')}
-  else if(t==='force-logout'){ts('Nomor dipakai di HP lain','err');setTimeout(L,1500)}
-  // ═══════ FIX #3: Bundle offer dalam incoming-call ═══════
-  else if(t==='incoming-call'){
-    lg('📞 incoming from',m.from,'hasOffer=',!!m.offer);
-    ra.play().catch(()=>{});
-    pendingOffer=m.offer;pendingFrom=m.from;
-    $('ci').textContent=m.from;$('nf').classList.add('on');
-    if(navigator.vibrate)navigator.vibrate([200,100,200]);
-    // ⚡ Prewarm mic + PC di background sambil user baca notif
-    gm().then(()=>prewarmPC()).catch(()=>{});
-  }
-  else if(t==='call-rejected'){$('ms').textContent='Ditolak';cl_()}
-  else if(t==='call-ended'){$('ms').textContent='Selesai';cl_()}
-  else if(t==='call-error'){ts(m.msg,'err');$('ms').textContent=m.msg;$('ms').className='st err'}
-  else if(t==='answer'){onAnswer(m)}
-  else if(t==='ice-candidate'){onIce(m)}
-}
-// ═══════ CALLER: offer bundled dengan call-user ═══════
 async function C(){
-  tg=cl($('tn').value);
-  if(!tg)return ts('Masukkan nomor tujuan','err');
-  if(tg===my)return ts('Tidak bisa panggil sendiri','err');
-  if(!wsReady)return ts('Belum konek','err');
-  caller=1;
-  $('ms').textContent='Memanggil '+tg+'...';$('ms').className='st';
-  try{
-    if(!ls)await gm();
-    if(!pc){const p=cp();if(!p)return ts('Mic gagal','err')}
-    const o=await pc.createOffer();
-    await pc.setLocalDescription(o);
-    const sdp=pc.localDescription.sdp;
-    const SR=sdp.includes('a=sendrecv'),SO=sdp.includes('a=sendonly'),RO=sdp.includes('a=recvonly'),IA=sdp.includes('a=inactive');
-    lg('📤 OFFER | sendrecv=',SR,'| sendonly=',SO,'| recvonly=',RO,'| inactive=',IA);
-    pc.getTransceivers().forEach((tr,i)=>lg(`  tr[${i}] dir=${tr.direction} cur=${tr.currentDirection}`));
-    const snds=pc.getSenders().filter(x=>x.track);
-    lg('📤 senders:',snds.length?snds.map(x=>x.track.kind).join(','):'NONE');
-    wsSend({type:'call-user',to:tg,sdp:pc.localDescription});
-  }catch(e){lg('call err',e);ts('Gagal: '+e.message,'err')}
+  tg=cl($('tn').value);if(!tg)return ts('Masukkan nomor','e');if(tg===my)return ts('Tidak bisa panggil sendiri','e');if(!wr)return ts('Belum konek','e');
+  caller=1;$('m').textContent='Memanggil '+tg+'...';$('m').className='t';
+  try{if(!ls)await gm();if(!pc){const p=cp();if(!p)return ts('Mic gagal','e')}
+    const o=await pc.createOffer();await pc.setLocalDescription(o);
+    wsS({type:'call-user',to:tg,sdp:pc.localDescription})}catch(e){lg('call',e);ts('Gagal: '+e.message,'e')}
 }
-// ═══════ CALLEE: accept → langsung setRemoteDescription + answer ═══════
 async function A(){
-  $('nf').classList.remove('on');
-  if(!pendingOffer)return ts('Tidak ada offer','err');
-  tg=pendingFrom;caller=0;
-  $('ms').textContent='Menyambung...';
-  try{
-    if(!ls)await gm();
-    if(!pc){const p=cp();if(!p)return ts('Mic gagal','err')}
-    lg('📥 setRemoteDescription...');
-    await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
-    rds=1;await fc();
-    const a=await pc.createAnswer();
-    await pc.setLocalDescription(a);
-    const sdp=pc.localDescription.sdp;
-    const SR=sdp.includes('a=sendrecv'),SO=sdp.includes('a=sendonly'),RO=sdp.includes('a=recvonly'),IA=sdp.includes('a=inactive');
-    lg('📥 ANSWER | sendrecv=',SR,'| sendonly=',SO,'| recvonly=',RO,'| inactive=',IA);
-    pc.getTransceivers().forEach((tr,i)=>lg(`  tr[${i}] dir=${tr.direction} cur=${tr.currentDirection}`));
-    const snds=pc.getSenders().filter(x=>x.track);
-    lg('📤 senders:',snds.length?snds.map(x=>x.track.kind).join(','):'NONE');
-    wsSend({type:'answer',to:tg,sdp:pc.localDescription});
-    pendingOffer=null;
-  }catch(e){lg('accept err',e);ts('Gagal: '+e.message,'err')}
+  $('n').classList.remove('on');if(!po)return ts('Tidak ada offer','e');tg=pf;caller=0;$('m').textContent='Menyambung...';
+  try{if(!ls)await gm();if(!pc){const p=cp();if(!p)return ts('Mic gagal','e')}
+    await pc.setRemoteDescription(new RTCSessionDescription(po));rds=1;await fc();
+    const a=await pc.createAnswer();await pc.setLocalDescription(a);
+    wsS({type:'answer',to:tg,sdp:pc.localDescription});po=null}catch(e){lg('acc',e);ts('Gagal: '+e.message,'e')}
 }
-async function onAnswer(m){
-  try{
-    if(!pc)return;
-    lg('📥 answer diterima');
-    await pc.setRemoteDescription(new RTCSessionDescription(m.sdp));
-    rds=1;await fc();
-  }catch(e){lg('ans err',e)}
-}
-async function onIce(m){
-  if(!pc)return;const c=new RTCIceCandidate(m.candidate);
-  if(!rds){pend.push(c);return}
-  try{await pc.addIceCandidate(c)}catch(e){}
-}
-function H(){
-  htOn=!htOn;
-  $('htb').textContent=htOn?'📻 HT ON':'📻 HT OFF';
-  if(htChain){
-    htChain.inG.gain.value=htOn?3.2:1;
-    htChain.agc.threshold.value=htOn?-32:0;
-    htChain.agc.ratio.value=htOn?14:1;
-    htChain.hp1.frequency.value=htOn?400:20;
-    htChain.hp2.frequency.value=htOn?400:20;
-    htChain.lp1.frequency.value=htOn?2800:20000;
-    htChain.lp2.frequency.value=htOn?2800:20000;
-    htChain.pk.gain.value=htOn?12:0;
-    htChain.cut.gain.value=htOn?-8:0;
-    htChain.pre.gain.value=htOn?6:0;
-    htChain.clip.curve=htOn?makeClipCurve(11,0.4):null;
-    htChain.out.gain.value=htOn?2.3:1;
-    htChain.ng.gain.value=htOn?0.008:0;
-  }
-  if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
-  ts(htOn?'📻 HT MODE':'🔊 NORMAL','ok');
-  lg('HT',htOn?'ON':'OFF');
-}
-function U(a){ra.muted=false;ra.volume=1;ra.play().then(()=>{if(a)ts('🔊 Audio aktif','ok')}).catch(e=>{if(a)ts('⚠️ Tap lagi','err')})}
+async function oa(m){try{if(!pc)return;await pc.setRemoteDescription(new RTCSessionDescription(m.sdp));rds=1;await fc()}catch(e){lg('ans',e)}}
+async function oi(m){if(!pc)return;const c=new RTCIceCandidate(m.candidate);if(!rds){pend.push(c);return}try{await pc.addIceCandidate(c)}catch(e){}}
+function U(a){ra.muted=false;ra.volume=1;ra.play().then(()=>{if(a)ts('🔊 Audio aktif','k')}).catch(()=>{if(a)ts('⚠️ Tap lagi','e')});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
 function R(){
   const n=cl($('mn').value);
-  if(!n)return ts('Masukkan nomor','err');
-  if(n.length<8)return ts('Nomor < 8 digit','err');
-  if(n.length>15)return ts('Nomor terlalu panjang','err');
-  if(!/^(0|62)?8\d{7,13}$/.test(n))return ts('Format 08xxx','err');
-  if(!wsReady)return ts('Belum konek','err');
-  my=n;localStorage.setItem('myNo',n);rp=1;
-  wsSend({type:'register',no:n});
+  if(!n)return ts('Masukkan nomor','e');
+  if(n.length<8)return ts('Nomor < 8 digit','e');
+  if(n.length>15)return ts('Nomor kepanjangan','e');
+  if(!/^(0|62)?8\d{7,13}$/.test(n))return ts('Format 08xxx','e');
+  if(!wr)return ts('Belum konek','e');
+  my=n;localStorage.setItem('myNo',n);rp=1;wsS({type:'register',no:n});
   $('rb').textContent='...';$('rb').disabled=1;$('mn').disabled=1;
-  clearTimeout(rt);rt=setTimeout(()=>{if(rp){ts('Timeout','err');rp=0;rbReset()}},8e3);
+  clearTimeout(rT);rT=setTimeout(()=>{if(rp){ts('Timeout','e');rp=0;rbR()}},8e3);
 }
-function L(){try{wsSend({type:'unregister'});E()}catch(_){}localStorage.removeItem('myNo');setTimeout(()=>location.reload(),200)}
-function X(){$('nf').classList.remove('on');if(pendingFrom)wsSend({type:'reject-call',to:pendingFrom});pendingOffer=null;pendingFrom=null}
-function E(){if(tg&&wsReady)wsSend({type:'end-call',to:tg});cl_();$('ms').textContent='Selesai';$('ms').className='st'}
+function L(){try{wsS({type:'unregister'});E()}catch(_){}localStorage.removeItem('myNo');setTimeout(()=>location.reload(),200)}
+function X(){$('n').classList.remove('on');if(pf)wsS({type:'reject-call',to:pf});po=null;pf=null}
+function E(){if(tg&&wr)wsS({type:'end-call',to:tg});cl_();$('m').textContent='Selesai';$('m').className='t'}
 function cl_(){
   try{pc&&pc.close()}catch(_){}pc=null;
-  try{ls&&ls.getTracks().forEach(t=>t.stop())}catch(_){}ls=null;lsProm=null;
-  rst=null;ra.srcObject=null;stopDistLoop();if(htChain){try{htChain.src.disconnect();htChain.out.disconnect();htChain.ns.stop();htChain.dest.disconnect()}catch(_){}htChain=null}
+  try{ls&&ls.getTracks().forEach(t=>t.stop())}catch(_){}ls=null;lp=null;rs=null;ra.srcObject=null;
   pend=[];rds=0;cancelAnimationFrame(raf);$('vu').style.width='0';
-  micMuted=true;$('pb').disabled=true;$('pb').classList.remove('on');$('pb').textContent='🎙 MIC ON';
-  pendingOffer=null;pendingFrom=null;
+  $('pb').disabled=true;$('pb').classList.remove('on');$('pb').textContent='TAHAN UNTUK BICARA';
+  po=null;pf=null;stopDist();$('fv').firstChild.textContent='—';
 }
-function startTalk(e){
-  if(e)e.preventDefault();
-  if(!ls)return;
-  micMuted=true;
-  ls.getAudioTracks().forEach(t=>t.enabled=true);
-  $('pb').classList.add('on');
-  $('pb').textContent='🔴 BICARA...';
-  if(navigator.vibrate)navigator.vibrate(15);
-  lg('PTT ON');
+function ST(e){
+  if(e){e.preventDefault();e.stopPropagation&&e.stopPropagation()}
+  if(!ls){gm().catch(()=>{});ts('Mic belum siap','e');return}
+  const t=ls.getAudioTracks();if(!t.length)return ts('No mic','e');
+  t.forEach(x=>x.enabled=true);
+  $('pb').classList.add('on');$('pb').textContent='🔴 BICARA...';
+  navigator.vibrate&&navigator.vibrate(15);lg('📢 ON');
 }
-function stopTalk(e){
-  if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
+function SP(e){
+  if(e){e.preventDefault();e.stopPropagation&&e.stopPropagation()}
   if(!ls)return;
   ls.getAudioTracks().forEach(t=>t.enabled=false);
-  micMuted=true;
-  $('pb').classList.remove('on');
-  $('pb').textContent='TAHAN UNTUK BICARA';
-  lg('🔇 PTT OFF');
+  $('pb').classList.remove('on');$('pb').textContent='TAHAN UNTUK BICARA';lg('🔇 OFF');
 }
-wsConn();
+wsC();
+'serviceWorker' in navigator && navigator.serviceWorker.register('/sw.js').catch(()=>{});
+const uo=()=>{const b=$('ob');if(navigator.onLine){b.classList.remove('on')}else{b.classList.add('on');net('','OFFLINE')}};
+window.addEventListener('online',()=>{uo();if(!wr)wsC()});
+window.addEventListener('offline',uo);uo();
 </script></body></html>
