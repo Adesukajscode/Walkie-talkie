@@ -165,7 +165,7 @@ button:not(:disabled):active{transform:scale(.96)}
 <div class=vw><div class=vu id=vu></div></div>
 <div id=ah>Level suara</div>
 <button class=ptt id=pb disabled ontouchstart="startTalk(event)" ontouchend="stopTalk(event)" ontouchcancel="stopTalk(event)" onmousedown="startTalk(event)" onmouseup="stopTalk(event)" onmouseleave="stopTalk(event)">TAHAN UNTUK BICARA</button>
-<div class=r><button class=d onclick=E()>Akhiri</button><button class=w onclick=U(1)>🔊 Audio</button></div>
+<div class=r><button class=d onclick=E()>Akhiri</button><button class=w id=htb onclick=H()>📻 HT ON</button></div>
 <div class=r><button class=p onclick=L()>Ganti Nomor</button></div>
 </div>
 <div class=nf id=nf><p>📞 <b id=ci></b> memanggil...</p><button class=s onclick=A()>Terima</button><button class=d onclick=X()>Tolak</button></div>
@@ -177,11 +177,33 @@ let tt=null;const ts=(m,t='')=>{const e=$('ts');e.textContent=m;e.className='ts 
 const WS_URL=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
 let ws=null,wsReady=false,retry=0,pingT=null;
 let my=localStorage.getItem('myNo')||'',tg='',caller=0,pc=null,ls=null,rst=null,pend=[],rds=0,mo=0,raf=null,rp=0,rt=null,micMuted=true;
-let pendingOffer=null,pendingFrom=null;
+let pendingOffer=null,pendingFrom=null,htChain=null,htOn=true;
 const ra=$('ra');ra.volume=1;ra.muted=false;
 const net=(s,t)=>{$('dot').className='dot'+(s==='ok'?' on':(s==='w'?' wn':''));$('spin').className='spin'+(s==='ok'?'':' on');$('nt').textContent=t;$('rb').disabled=s!=='ok';$('cb').disabled=s!=='ok'};
 function rbReset(){$('rb').textContent='Daftar';$('rb').disabled=0;$('mn').disabled=0}
 fetch('/prewarm').catch(()=>{});
+function makeClipCurve(k){
+  const n=4096,c=new Float32Array(n);
+  for(let i=0;i<n;i++){const x=(i*2)/n-1;c[i]=(2/Math.PI)*Math.atan(x*k)}
+  return c;
+}
+function makeNoiseBuf(sec){
+  const sr=ac.sampleRate,b=ac.createBuffer(1,sr*sec,sr),d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  return b;
+}
+function playSquelch(dur=0.22,lvl=0.14){
+  if(!ac||!htOn)return;
+  try{
+    const src=ac.createBufferSource();src.buffer=makeNoiseBuf(dur);
+    const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2400;bp.Q.value=1.5;
+    const g=ac.createGain();const now=ac.currentTime;
+    g.gain.setValueAtTime(lvl,now);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+    src.connect(bp).connect(g).connect(ac.destination);
+    src.start(now);src.stop(now+dur+0.02);
+  }catch(e){}
+}
 
 // ═══════ FIX #1: Promise-guarded gm() → cegah double getUserMedia ═══════
 let lsProm=null;
@@ -243,15 +265,47 @@ function cp(){
     }
   }catch(e){lg('codec pref err',e.message)}
   pc.ontrack=e=>{
-    lg('📥 ONTRACK | kind=',e.track.kind,'| enabled=',e.track.enabled,'| streams=',e.streams.length);
+    lg('📥 ONTRACK | kind=',e.track.kind,'| enabled=',e.track.enabled);
     if(e.streams&&e.streams[0])rst=e.streams[0];
     else{if(!rst)rst=new MediaStream();rst.addTrack(e.track)}
-    ra.srcObject=rst;ra.muted=false;ra.volume=1;
-    const play=()=>ra.play().then(()=>{lg('🔊 play OK');$('ah').textContent='🎧 Mendengarkan'}).catch(err=>{lg('play fail',err.message);$('ah').textContent='⚠️ Tap Audio';try{ra.muted=true;ra.play().then(()=>{ra.muted=false})}catch(_){}});
-    play();setTimeout(play,300);setTimeout(play,1000);
+    ra.srcObject=rst;ra.muted=true;
+    if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
+    const build=()=>{
+      if(!ac||htChain)return;
+      try{
+        const src=ac.createMediaStreamSource(rst);
+        const inG=ac.createGain();inG.gain.value=2.8;
+        const agc=ac.createDynamicsCompressor();
+        agc.threshold.value=-30;agc.knee.value=4;agc.ratio.value=12;
+        agc.attack.value=0.002;agc.release.value=0.09;
+        const hp1=ac.createBiquadFilter();hp1.type='highpass';hp1.frequency.value=300;hp1.Q.value=0.7;
+        const hp2=ac.createBiquadFilter();hp2.type='highpass';hp2.frequency.value=300;hp2.Q.value=0.7;
+        const lp1=ac.createBiquadFilter();lp1.type='lowpass';lp1.frequency.value=3000;lp1.Q.value=0.7;
+        const lp2=ac.createBiquadFilter();lp2.type='lowpass';lp2.frequency.value=3000;lp2.Q.value=0.7;
+        const pk=ac.createBiquadFilter();pk.type='peaking';pk.frequency.value=1800;pk.gain.value=9;pk.Q.value=1.4;
+        const cut=ac.createBiquadFilter();cut.type='peaking';cut.frequency.value=800;cut.gain.value=-4;cut.Q.value=2;
+        const pre=ac.createBiquadFilter();pre.type='highshelf';pre.frequency.value=1500;pre.gain.value=4;
+        const clip=ac.createWaveShaper();clip.curve=makeClipCurve(7);clip.oversample='4x';
+        const out=ac.createGain();out.gain.value=2.0;
+        const ns=ac.createBufferSource();ns.buffer=makeNoiseBuf(3);ns.loop=true;
+        const nf=ac.createBiquadFilter();nf.type='bandpass';nf.frequency.value=2200;nf.Q.value=0.6;
+        const ng=ac.createGain();ng.gain.value=0.006;
+        src.connect(inG).connect(agc).connect(hp1).connect(hp2).connect(lp1).connect(lp2)
+           .connect(pk).connect(cut).connect(pre).connect(clip).connect(out).connect(ac.destination);
+        ns.connect(nf).connect(ng).connect(out);
+        ns.start();
+        htChain={src,inG,agc,hp1,hp2,lp1,lp2,pk,cut,pre,clip,out,ns,ng};
+        lg('📻 HT CHAIN AKTIF (full DSP)');
+        $('ah').textContent='📻 HT MODE — Mendengarkan';
+      }catch(err){lg('HT chain err',err.message)}
+    };
+    if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(_){}}
+    if(ac&&ac.state==='suspended')ac.resume().then(build).catch(build);
+    else build();
+    setTimeout(build,200);setTimeout(build,800);
     mt(rst);
-    e.track.onunmute=()=>lg('📥 remote UNMUTED');
-    e.track.onmute=()=>lg('📥 remote MUTED');
+    e.track.onmute=()=>{lg('📥 remote MUTED → squelch tail');playSquelch(0.22,0.14)};
+    e.track.onunmute=()=>{lg('📥 remote UNMUTED');playSquelch(0.05,0.06)};
   };
   pc.onicecandidate=e=>{if(e.candidate)wsSend({type:'ice-candidate',to:tg,candidate:e.candidate})};
   pc.oniceconnectionstatechange=()=>lg('ICE:',pc.iceConnectionState);
@@ -397,6 +451,28 @@ async function onIce(m){
   if(!rds){pend.push(c);return}
   try{await pc.addIceCandidate(c)}catch(e){}
 }
+function H(){
+  htOn=!htOn;
+  $('htb').textContent=htOn?'📻 HT ON':'📻 HT OFF';
+  if(htChain){
+    htChain.inG.gain.value=htOn?2.8:1;
+    htChain.agc.threshold.value=htOn?-30:0;
+    htChain.agc.ratio.value=htOn?12:1;
+    htChain.hp1.frequency.value=htOn?300:10;
+    htChain.hp2.frequency.value=htOn?300:10;
+    htChain.lp1.frequency.value=htOn?3000:20000;
+    htChain.lp2.frequency.value=htOn?3000:20000;
+    htChain.pk.gain.value=htOn?9:0;
+    htChain.cut.gain.value=htOn?-4:0;
+    htChain.pre.gain.value=htOn?4:0;
+    htChain.clip.curve=htOn?makeClipCurve(7):null;
+    htChain.out.gain.value=htOn?2.0:1;
+    htChain.ng.gain.value=htOn?0.006:0;
+  }
+  if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
+  ts(htOn?'📻 HT MODE':'🔊 NORMAL','ok');
+  lg('HT',htOn?'ON':'OFF');
+}
 function U(a){ra.muted=false;ra.volume=1;ra.play().then(()=>{if(a)ts('🔊 Audio aktif','ok')}).catch(e=>{if(a)ts('⚠️ Tap lagi','err')})}
 function R(){
   const n=cl($('mn').value);
@@ -416,7 +492,7 @@ function E(){if(tg&&wsReady)wsSend({type:'end-call',to:tg});cl_();$('ms').textCo
 function cl_(){
   try{pc&&pc.close()}catch(_){}pc=null;
   try{ls&&ls.getTracks().forEach(t=>t.stop())}catch(_){}ls=null;lsProm=null;
-  rst=null;ra.srcObject=null;
+  rst=null;ra.srcObject=null;if(htChain){try{htChain.src.disconnect();htChain.out.disconnect();htChain.ns.stop()}catch(_){}htChain=null}
   pend=[];rds=0;cancelAnimationFrame(raf);$('vu').style.width='0';
   micMuted=true;$('pb').disabled=true;$('pb').classList.remove('on');$('pb').textContent='🎙 MIC ON';
   pendingOffer=null;pendingFrom=null;
