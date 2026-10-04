@@ -147,7 +147,7 @@ async function gm(){
   lp=(async()=>{
     if(!navigator.mediaDevices)throw Error('No mic');
     const tries=[
-      {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1,sampleRate:48000},video:false},
+      {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1,sampleRate:48000,sampleSize:16,latency:0,googEchoCancellation:true,googAutoGainControl:true,googNoiseSuppression:true,googHighpassFilter:true,googAudioMirroring:false,googTypingNoiseDetection:true,googAutoGainControl2:true},video:false},
       {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false},
       {audio:true,video:false}
     ];
@@ -308,7 +308,28 @@ function SP(e){
   ls.getAudioTracks().forEach(t=>t.enabled=false);
   $('pb').classList.remove('on');lg('🔇 OFF');
 }
-wsC();
+function buildAnt(){
+  const a=document.querySelector('.ant');if(!a||a.dataset.built)return;
+  a.dataset.built='1';
+  a.innerHTML='<div class="seg s1"></div><div class="seg s2"></div><div class="seg s3"></div><div class="tip"></div>';
+  a.style.cssText+=';width:10px;height:120px;background:none;box-shadow:none;border-radius:0;display:flex;flex-direction:column;align-items:center';
+  if(!document.getElementById('antCss')){
+    const st=document.createElement('style');st.id='antCss';
+    st.textContent='.seg{width:100%;border-radius:2px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset -2px 0 2px rgba(0,0,0,.5)}.seg.s1{flex:1;background:linear-gradient(180deg,#3a3a48,#22222c);border-bottom:2px solid #0a0a0f}.seg.s2{flex:1;background:linear-gradient(180deg,#2a2a35,#16161e);width:80%;border-bottom:2px solid #0a0a0f}.seg.s3{flex:1;background:linear-gradient(180deg,#1e1e28,#0d0d12);width:60%}.tip{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a3a44,#0a0a0f);box-shadow:inset 0 -2px 3px rgba(0,0,0,.6),0 0 4px rgba(0,224,255,.15);margin-top:-2px}';
+    document.head.appendChild(st);
+  }
+  lg('📡 Antena 3-segmen di-render via JS');
+}
+function buildHT(){
+  buildAnt();
+  const ht=document.querySelector('.ht');if(!ht||ht.dataset.badge)return;
+  ht.dataset.badge='1';
+  const b=document.createElement('div');b.textContent='WT-88';
+  b.style.cssText='position:absolute;top:-26px;left:8px;font-size:.5rem;letter-spacing:2px;color:#5a6580;font-weight:800';
+  ht.appendChild(b);
+  lg('📻 Frame HT di-render via JS');
+}
+buildHT();wsC();
 'serviceWorker' in navigator && navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const uo=()=>{const b=$('ob');if(navigator.onLine)b.classList.remove('on');else{b.classList.add('on');net('','OFFLINE')}};
 window.addEventListener('online',()=>{uo();if(!wr)wsC()});
