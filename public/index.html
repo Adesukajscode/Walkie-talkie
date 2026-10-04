@@ -99,7 +99,7 @@ audio{display:none}
 </style></head><body>
 <div class=ob id=ob>⚠️ OFFLINE</div>
 <div class=ts id=ts></div>
-<audio id=ra autoplay playsinline></audio>
+<audio id=ra muted playsinline style=display:none></audio>
 <div class=w>
 
 <div class=top><span class=dt id=dt></span><span id=nt>connecting</span></div>
@@ -296,93 +296,44 @@ function cl_(){
 }
 function ST(e){
   if(e){e.preventDefault();e.stopPropagation&&e.stopPropagation()}
+  clearTimeout(tailTimer);
+  // URUTAN PENTING: mute speaker dulu, baru aktifkan mic
+  setRxLevel(0,0);
+  if(rxChain){try{rxChain.gain.gain.cancelScheduledValues(ac.currentTime);rxChain.gain.gain.setValueAtTime(0,ac.currentTime)}catch(_){}}
+  try{ra.muted=true}catch(_){}
+  applyEchoGate();
   if(!ls){gm().catch(()=>{});ts('mic belum siap','e');return}
-  const t=ls.getAudioTracks();if(!t.length)return;
-  t.forEach(x=>x.enabled=true);
-  $('pb').classList.add('on');
-  navigator.vibrate&&navigator.vibrate(15);lg('📢 ON');
+  const tgt=activeTx||ls.getAudioTracks()[0];if(!tgt)return;
+  tgt.enabled=true;
+  $('pb').classList.add('on');$('led').classList.add('tx');
+  navigator.vibrate&&navigator.vibrate(15);
+  lg('📢ON',tgt.label||'');
 }
-function SP(e){
-  if(e){e.preventDefault();e.stopPropagation&&e.stopPropagation()}
-  if(!ls)return;
-  ls.getAudioTracks().forEach(t=>t.enabled=false);
-  $('pb').classList.remove('on');lg('🔇 OFF');
-}
-let rxChain=null,rxLevel=1,fbCount=0,fbLast=0,tailTimer=null;
-let activeTx=null;
-function setTxTrack(track){
-  if(!track)return;
-  if(pc){
-    const snd=pc.getSenders().find(x=>x.track&&x.track.kind==='audio');
-    if(snd){
-      snd.replaceTrack(track).then(()=>{
-        activeTx=track;
-        track.enabled=false;
-        lg('🎤 Tx track aktif:',track.label||'processed');
-      }).catch(e=>{lg('replaceTrack err',e.message);activeTx=track});
-      return;
-    }
-  }
-  activeTx=track;
-  track.enabled=false;
-}
-function setRxLevel(v,ramp){
-  rxLevel=v;
-  if(!rxChain){try{ra.volume=v}catch(_){};return}
-  try{
-    const t=ac.currentTime;
-    rxChain.gain.gain.cancelScheduledValues(t);
-    if(ramp){rxChain.gain.gain.setValueAtTime(rxChain.gain.gain.value,t);rxChain.gain.gain.linearRampToValueAtTime(v,t+ramp)}
-    else{rxChain.gain.gain.setValueAtTime(v,t)}
-  }catch(e){}
-  // Safety: kalau Web Audio gagal, fallback ke ra.volume
-  try{ra.volume=Math.max(v,.001)}catch(_){}
-}
-function initRxChain(stream){
-  if(rxChain)return;
-  try{
-    if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'})}catch{return}}
-    if(ac.state==='suspended')ac.resume().catch(()=>{});
-    const src=ac.createMediaStreamSource(stream);
-    const gain=ac.createGain();gain.gain.value=1;
-    const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=120;hp.Q.value=.7;
-    const lim=ac.createDynamicsCompressor();
-    lim.threshold.value=-6;lim.knee.value=6;lim.ratio.value=12;lim.attack.value=.003;lim.release.value=.1;
-    src.connect(hp).connect(gain).connect(lim).connect(ac.destination);
-    rxChain={src,gain,hp,lim};
-    // Matikan playback lewat <audio> — pakai Web Audio saja (cegah double playback)
-    try{ra.muted=true}catch(_){}
-    lg('🔊 RX chain via WebAudio (hard-mute capable)');
-  }catch(e){lg('initRxChain err',e.message)}
 }
 function feedbackCheck(){
-  // Monitor mic + remote, deteksi pola energy tinggi sustained saat PTT
-  if(!rxChain||!micAnalyser||!micData||!an)return;
+  if(!rxChain||!micAnalyser)return;
   const pttOn=document.getElementById('pb').classList.contains('on');
-  if(!pttOn){fbCount=0;return}
-  // Remote energy
-  try{an.getByteFrequencyData(micData);let x=0;for(let i=0;i<micData.length;i++)x+=micData[i];const rxAvg=x/micData.length}catch(e){}
-  // Mic energy
+  if(!pttOn){fbCount=0;fbLast=0;return}
   try{
     if(!window._micBuf)_micBuf=new Uint8Array(micAnalyser.frequencyBinCount);
     micAnalyser.getByteFrequencyData(_micBuf);
-    let m=0;for(let i=0;i<_micBuf.length;i++)m+=_micBuf[i];const micAvg=m/_micBuf.length;
-    // Kalau mic tangkap energy tinggi SEMENTARA PTT → kemungkinan speaker feedback
-    if(micAvg>35){
-      const now=Date.now();
+    let m=0;for(let i=0;i<_micBuf.length;i++)m+=_micBuf[i];
+    const micAvg=m/_micBuf.length;
+    const now=Date.now();
+    if(micAvg>25){
       if(now-fbLast<300)fbCount++;else fbCount=1;
       fbLast=now;
       if(fbCount>=2){
-        lg('⚠️ FEEDBACK terdeteksi → force mute speaker');
-        setRxLevel(0,0);
+        lg('⚠️FEEDBACK → force mute');
+        if(rxChain){try{rxChain.gain.gain.cancelScheduledValues(ac.currentTime);rxChain.gain.gain.setValueAtTime(0,ac.currentTime)}catch(_){}}
         try{ra.muted=true}catch(_){}
-        ts('⚠️ Echo gate aktif','e');
+        ts('⚠️ Echo gate','e');
         fbCount=0;
-        setTimeout(()=>{try{ra.muted=false}catch(_){};setRxLevel(1,.3)},800);
       }
-    }else{fbCount=0}
+    }else if(micAvg<10){fbCount=0}
   }catch(e){}
 }
+setInterval(feedbackCheck,150);
 setInterval(feedbackCheck,250);
 let ngProc=null,ngOn=0,ngSrc=null,ngHp=null,ngBp=null,ngGate=null,ngAn=null,ngData=null,ngRaf=null,ngEnv=0,ngNoiseFloor=8,ngSamples=[];
 function buildNgBtn(){
@@ -607,6 +558,17 @@ if(!document.getElementById('gateCss')){
   document.head.appendChild(st);
 }
 
+function rxRecover(){
+  if(!rs)return;
+  if(!rxChain){initRxChain(rs);return}
+  // Cek apakah rxChain masih aktif
+  try{
+    const g=rxChain.gain.gain;
+    const pttOn=document.getElementById('pb').classList.contains('on');
+    if(pttOn){if(g.value>.05)g.setValueAtTime(0,ac.currentTime)}
+  }catch(e){}
+}
+setInterval(rxRecover,500);
 wsC();
 'serviceWorker' in navigator && navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const uo=()=>{const b=$('ob');if(navigator.onLine)b.classList.remove('on');else{b.classList.add('on');net('','OFFLINE')}};
