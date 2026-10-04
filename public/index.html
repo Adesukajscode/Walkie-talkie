@@ -141,9 +141,14 @@ function toggleGate(){
   const b=$('gbtn');
   const N=['◎','◉','◍'],C=['#888','#00e0ff','#00ff88'];
   b.textContent=N[echoGate];b.style.color=C[echoGate];b.style.borderColor=C[echoGate];
-  b.style.boxShadow=echoGate===0?'0 4px 12px rgba(0,0,0,.5)':`0 0 20px ${C[echoGate]}`;
-  ts('🎛️ '+['NORMAL','ECHO-GATE','CLEAN-GATE'][echoGate],echoGate===0?'':'k');
-  lg('Gate',echoGate);
+  b.style.boxShadow=echoGate===0?'0 4px 12px rgba(0,0,0,.5)':'0 0 20px '+C[echoGate];
+  const names=['NORMAL','ECHO-GATE','CLEAN-GATE'];
+  ts('🎛️ '+names[echoGate],echoGate===0?'':'k');
+  lg('Gate',names[echoGate]);
+  const led=$('led');
+  if(led){if(echoGate===1)led.classList.add('echo');else led.classList.remove('echo')}
+  if(echoGate===2&&!ngOn)toggleNg();
+  else if(echoGate!==2&&ngOn)toggleNg();
 }
 function toggleNg(){
   ngOn=!ngOn;
@@ -152,10 +157,74 @@ function toggleNg(){
   b.style.color=ngOn?'#ffb300':'#888';
   b.style.borderColor=ngOn?'#ffb300':'#2a2a35';
   b.style.boxShadow=ngOn?'0 0 20px #ffb300':'0 4px 12px rgba(0,0,0,.5)';
-  ts(ngOn?'🔇 Noise Gate ON':'🔇 Noise Gate OFF','k');
-  lg('NG',ngOn);
+  ts(ngOn?'🔇 Noise Gate ON':'🔇 Noise Gate OFF',ngOn?'k':'');
+  lg('NG',ngOn?'ON':'OFF');
+  if(ngOn)startNg();else stopNg();
 }
 
+
+function applyEchoGate(){
+  if(!rxChain)return;
+  try{
+    if(echoGate===0){setRxLevel(.3,0)}
+    else{setRxLevel(0,0)}
+  }catch(e){}
+}
+function releaseEchoGate(){setRxLevel(1,.15)}
+let ngNodes=null,ngRaf=null,ngData=null,ngEnv=0,ngFloor=8,ngProc=null;
+function startNg(){
+  if(ngNodes||!ls)return;
+  try{
+    if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'})}catch{return}}
+    if(ac.state==='suspended')ac.resume().catch(()=>{});
+    const src=ac.createMediaStreamSource(ls);
+    const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=200;hp.Q.value=.7;
+    const n1=ac.createBiquadFilter();n1.type='notch';n1.frequency.value=50;n1.Q.value=10;
+    const n2=ac.createBiquadFilter();n2.type='notch';n2.frequency.value=60;n2.Q.value=10;
+    const pk=ac.createBiquadFilter();pk.type='peaking';pk.frequency.value=1800;pk.Q.value=1.2;pk.gain.value=6;
+    const gate=ac.createGain();gate.gain.value=0;
+    const an2=ac.createAnalyser();an2.fftSize=512;an2.smoothingTimeConstant=.6;
+    const dest=ac.createMediaStreamDestination();
+    src.connect(n1).connect(n2).connect(hp).connect(pk).connect(gate).connect(dest);
+    gate.connect(an2);
+    ngProc=dest.stream.getAudioTracks()[0];
+    if(ngProc)ngProc.enabled=false;
+    ngNodes={src,gate,an:an2,dest};
+    ngData=new Uint8Array(an2.frequencyBinCount);
+    ngEnv=0;ngFloor=8;
+    const loop=()=>{
+      if(!ngNodes){ngRaf=null;return}
+      an2.getByteFrequencyData(ngData);
+      const sr=ac.sampleRate,nn=an2.fftSize;
+      const bL=Math.max(1,Math.floor(200*nn/sr)),bH=Math.min(ngData.length-1,Math.floor(3400*nn/sr));
+      let sum=0,cnt=0;
+      for(let i=bL;i<=bH;i++){sum+=ngData[i]*ngData[i];cnt++}
+      const rms=Math.sqrt(sum/Math.max(1,cnt));
+      if(rms<ngFloor*1.5){ngFloor=ngFloor*.98+rms*.02;if(ngFloor<3)ngFloor=3;if(ngFloor>25)ngFloor=25}
+      const op=ngFloor+10,cl=ngFloor+4;
+      const tgt=rms>op?1:(rms<cl?0:ngEnv);
+      const rate=tgt>ngEnv?.35:.06;
+      ngEnv=ngEnv+(tgt-ngEnv)*rate;
+      try{gate.gain.setTargetAtTime(ngEnv,ac.currentTime,.02)}catch(_){}
+      ngRaf=requestAnimationFrame(loop);
+    };
+    loop();
+    if(pc)setTxTrack(ngProc);
+    lg('🔇NG aktif floor='+ngFloor.toFixed(1));
+  }catch(e){lg('startNg err',e.message)}
+}
+function stopNg(){
+  if(!ngNodes)return;
+  try{ngNodes.src.disconnect();ngNodes.gate.disconnect();ngNodes.dest.disconnect()}catch(_){}
+  if(ngRaf){cancelAnimationFrame(ngRaf);ngRaf=null}
+  ngNodes=null;ngProc=null;ngData=null;
+  if(ls&&ls.getAudioTracks().length){
+    const orig=ls.getAudioTracks()[0];
+    if(orig){orig.enabled=false;if(pc)setTxTrack(orig);else activeTx=orig}
+  }
+  lg('🔇NG off');
+}
+window.addEventListener('error',e=>{lg('❌ERR',e.message,'@',e.lineno);try{ts('❌ '+e.message,'e')}catch(_){}});
 function wsC(){
   lg('WS->',WU);net('w','connecting');
   try{ws=new WebSocket(WU)}catch(e){net('','LINK ERROR');setTimeout(wsC,1500);return}
@@ -257,7 +326,7 @@ const pw=()=>{if(ls&&!pc){cp();lg('♨️prewarm')}};
 async function fc(){if(!pc||!rds)return;while(pend.length){try{await pc.addIceCandidate(pend.shift())}catch(e){}}}
 function om(m){
   const t=m.type;if(t==='pong'||t==='welcome')return;lg('<-',t);
-  if(t==='registered'){rp=0;clearTimeout(rT);my=m.no;localStorage.setItem('myNo',m.no);$('rs').classList.add('h');$('cs').classList.remove('h');$('idv').textContent=m.no;rbR();ts('✅'+m.no,'k');gm().then(()=>pw()).catch(()=>{})}
+  if(t==='registered'){rp=0;clearTimeout(rT);my=m.no;localStorage.setItem('myNo',m.no);$('rs').classList.add('h');$('cs').classList.remove('h');$('idv').textContent=m.no;rbR();ts('✅'+m.no,'k');$('pb').disabled=false;$('pb').textContent='TAHAN UNTUK BICARA';gm().then(()=>{if(ls&&!activeTx)activeTx=ls.getAudioTracks()[0];pw()}).catch(()=>{})}
   else if(t==='error'){rp=0;clearTimeout(rT);rbR();ts('❌'+m.msg,'e')}
   else if(t==='force-logout'){ts('nomor dipakai HP lain','e');setTimeout(L,1500)}
   else if(t==='peer-location'){peerLoc={lat:m.lat,lng:m.lng,acc:m.acc||0};ud()}
@@ -322,15 +391,14 @@ function cl_(){
 function ST(e){
   if(e){e.preventDefault();e.stopPropagation&&e.stopPropagation()}
   clearTimeout(tailTimer);
-  setRxLevel(0,0);
-  if(rxChain){try{rxChain.gain.gain.cancelScheduledValues(ac.currentTime);rxChain.gain.gain.setValueAtTime(0,ac.currentTime)}catch(_){}}
+  applyEchoGate();
   try{ra.muted=true}catch(_){}
   if(!ls){gm().catch(()=>{});ts('mic belum siap','e');return}
   const tgt=activeTx||ls.getAudioTracks()[0];if(!tgt)return;
   tgt.enabled=true;
   $('pb').classList.add('on');$('led').classList.add('tx');
   navigator.vibrate&&navigator.vibrate(15);
-  lg('📢ON');
+  lg('📢ON',tgt.label||'');
 }
 function SP(e){
   if(e){e.preventDefault();e.stopPropagation&&e.stopPropagation()}
@@ -338,10 +406,7 @@ function SP(e){
   const tgt=activeTx||ls.getAudioTracks()[0];if(tgt)tgt.enabled=false;
   $('pb').classList.remove('on');$('led').classList.remove('tx');
   clearTimeout(tailTimer);
-  tailTimer=setTimeout(()=>{
-    setRxLevel(1,.15);
-    const led=$('led');if(led)led.classList.remove('echo');
-  },200);
+  tailTimer=setTimeout(()=>{releaseEchoGate();const led=$('led');if(led)led.classList.remove('echo')},200);
   lg('🔇OFF');
 }
 wsC();
