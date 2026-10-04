@@ -198,7 +198,7 @@ function mt(s){
   try{if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch{return}}if(ac.state==='suspended')ac.resume().catch(()=>{});if(!an){an=ac.createAnalyser();an.fftSize=256}ac.createMediaStreamSource(s).connect(an)}catch(e){return}
   const d=new Uint8Array(an.frequencyBinCount);cancelAnimationFrame(raf);let k=0;
   const tk=()=>{an.getByteFrequencyData(d);let x=0;for(let i=0;i<d.length;i++)x+=d[i];$('vu').style.width=Math.min(100,x/d.length*2.5)+'%';
-    if((k++&3)===0){let mv=0,mb=0;for(let i=1;i<d.length;i++)if(d[i]>mv){mv=d[i];mb=i}const hz=mb*ac.sampleRate/an.fftSize;
+    if((k++&3)===0){let mv=0,mb=0;for(let i=1;i<d.length;i++)if(d[i]>mv){mv=d[i];mb=i}const hz=mb*ac.sampleRate/an.fftSize;const led=$("led");if(led&&!led.classList.contains("tx"))led.classList.toggle("rx",mv>30);
       if(mv<15){$('fv').textContent='—'}else{$('fv').textContent=hz<1000?hz.toFixed(0):(hz/1000).toFixed(2);$('fu').textContent=hz<1000?'Hz':'kHz'}}
     raf=requestAnimationFrame(tk)};tk();
 }
