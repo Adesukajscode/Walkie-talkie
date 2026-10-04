@@ -89,6 +89,16 @@ export class Room {
       return;
     }
 
+    if(t==='match'){
+      const me=this.wsNo.get(ws);
+      if(!me)return this.send(ws,{type:'error',msg:'Daftar dulu'});
+      const others=[...this.socks.keys()].filter(x=>x!==me);
+      if(!others.length)return this.send(ws,{type:'error',msg:'Tidak ada user lain online'});
+      const target=others[Math.floor(Math.random()*others.length)];
+      this.send(ws,{type:'match-target',no:target});
+      console.log('MATCH',me,'->',target);
+      return;
+    }
     if (t === 'call-user') {
       const from = this.wsNo.get(ws);
       const to = cl(m.to);
