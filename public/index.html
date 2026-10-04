@@ -123,7 +123,7 @@ var tg='',caller=false,matching=false;
 var pc=null,ls=null,rs=null,pend=[],rds=false;
 var po=null,pf=null;
 var ac=null,an=null,raf=null;
-var activeTx=null;
+var activeTx=null,rTrack=null;
 var ra=$('ra');
 var rttTimer=null,myLoc=null,peerLoc=null,geoTimer=null;
 var WU=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
@@ -340,6 +340,7 @@ function mkPC(){
   }catch(e){}
   pc.ontrack=function(e){
     lg('ONTRACK',e.track.kind);
+    rTrack=e.track;
     if(e.streams&&e.streams[0])rs=e.streams[0];
     else{if(!rs)rs=new MediaStream();rs.addTrack(e.track)}
     /* SINGLE PATH: <audio> saja */
@@ -415,22 +416,27 @@ function onIce(m){
 function ST(e){
   if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
   if(!ls)return ts('mic belum siap','e');
-  var t=activeTx||ls.getAudioTracks()[0];
-  if(!t)return;
-  t.enabled=true;
+  /* 1) MUTE MIC SEMUA dulu — cegah kirim suara speaker */
+  ls.getAudioTracks().forEach(function(t){t.enabled=false});
+  /* 2) MUTE SPEAKER HP SENDIRI (via volume + track) */
   ra.volume=0;
+  if(rTrack)rTrack.enabled=false;
+  /* 3) BARU aktifkan track mic yang benar */
+  var t=activeTx||ls.getAudioTracks()[0];
+  if(t)t.enabled=true;
   $('pb').classList.add('on');
   $('led').classList.add('tx');
   $('led').classList.remove('rx');
   if(navigator.vibrate)navigator.vibrate(15);
-  lg('PTT ON');
+  lg('PTT ON','txEnabled:',t&&t.enabled,'rTrack:',rTrack&&rTrack.enabled);
 }
 function SP(e){
   if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
-  if(!ls)return;
-  var t=activeTx||ls.getAudioTracks()[0];
-  if(t)t.enabled=false;
+  /* 1) MUTE MIC SEMUA — kritis! */
+  if(ls)ls.getAudioTracks().forEach(function(t){t.enabled=false});
+  /* 2) UNMUTE SPEAKER */
   ra.volume=1;
+  if(rTrack)rTrack.enabled=true;
   $('pb').classList.remove('on');
   $('led').classList.remove('tx');
   lg('PTT OFF');
@@ -519,6 +525,19 @@ window.addEventListener('online',function(){
 window.addEventListener('offline',function(){
   var b=$('ob');if(b)b.classList.add('on');setBar('OFFLINE');
 });
+
+/* Watchdog: pastikan mic mute kalau tidak PTT */
+setInterval(function(){
+  if(!ls)return;
+  var ptt=$('pb').classList.contains('on');
+  if(!ptt){
+    var anyOn=ls.getAudioTracks().some(function(t){return t.enabled});
+    if(anyOn){
+      ls.getAudioTracks().forEach(function(t){t.enabled=false});
+      lg('⚠️ watchdog: mic force-mute');
+    }
+  }
+},500);
 
 wsConn();
 </script></body></html>
