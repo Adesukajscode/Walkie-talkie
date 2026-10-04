@@ -170,7 +170,7 @@ function cp(){
   const tr=ls.getAudioTracks()[0];
   pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun1.l.google.com:19302'}],iceCandidatePoolSize:10,bundlePolicy:'max-bundle',rtcpMuxPolicy:'require'});
   pc.addTrack(tr,new MediaStream([tr]));
-  try{const c=RTCRtpSender.getCapabilities('audio');if(c&&c.codecs){const o=c.codecs.filter(x=>x.mimeType.toLowerCase()==='audio/opus'),r=c.codecs.filter(x=>x.mimeType.toLowerCase()!=='audio/opus');const tt=pc.getTransceivers()[0];if(tt&&tt.setCodecPreferences)tt.setCodecPreferences([...o,...r])}}catch(e){}
+  try{const c=RTCRtpSender.getCapabilities('audio');if(c&&c.codecs){const o=c.codecs.filter(x=>x.mimeType.toLowerCase()==='audio/opus').map(x=>({...x,parameters:{...x.parameters,useinbandfec:0,usedtx:0,minptime:10,maxptime:20}})),r=c.codecs.filter(x=>x.mimeType.toLowerCase()!=='audio/opus');const tt=pc.getTransceivers()[0];if(tt&&tt.setCodecPreferences)tt.setCodecPreferences([...o,...r])}}catch(e){}
   pc.ontrack=e=>{
     lg('📥 ONTRACK',e.track.kind);
     if(e.streams&&e.streams[0])rs=e.streams[0];else{if(!rs)rs=new MediaStream();rs.addTrack(e.track)}
