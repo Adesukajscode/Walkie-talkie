@@ -311,7 +311,15 @@ function A(){
 function X(){ $('inc').classList.remove('on'); if(pf)wsSend({type:'reject-call',to:pf}); po=null;pf=null; }
 function E(){ if(tg&&wr)wsSend({type:'end-call',to:tg}); cleanup(); ts('selesai'); }
 function L(){ try{wsSend({type:'unregister'});E()}catch(e){} localStorage.removeItem('myNo'); setTimeout(function(){location.reload()},200); }
-function U(){ ra.muted=false;ra.volume=1; ensurePlay(); ts('🔊 audio','k'); }
+function U(){
+  try{
+    ra.muted=false;ra.volume=1;
+    var pp=ra.play();
+    if(pp&&pp.then)pp.then(function(){ts('🔊 audio','k')}).catch(function(){ts('tap lagi','e')});
+    else ts('🔊 audio','k');
+    if(ac&&ac.state==='suspended')ac.resume().catch(function(){});
+  }catch(e){ts('error','e')}
+}
 
 /* ============== PEER CONNECTION ============== */
 function mkPC(){
@@ -343,15 +351,20 @@ function mkPC(){
     rTrack=e.track;
     if(e.streams&&e.streams[0])rs=e.streams[0];
     else{if(!rs)rs=new MediaStream();rs.addTrack(e.track)}
-    /* SINGLE PATH: <audio> saja */
-    ra.srcObject=rs;
-    ra.muted=false;
-    ra.volume=1;
-    ra.play().then(function(){lg('play OK')}).catch(function(err){lg('play err',err.message)});
-    /* VU meter via AnalyserNode — TIDAK connect ke speaker */
+    /* pastikan output audio hidup */
+    try{
+      ra.srcObject=rs;
+      ra.muted=false;
+      ra.volume=1;
+      var pp=ra.play();
+      if(pp&&pp.then)pp.then(function(){lg('play OK')}).catch(function(err){lg('play err',err.message)});
+    }catch(err){lg('attach err',err.message)}
+    /* VU meter */
     startVU(rs);
+    /* LED RX */
     e.track.onunmute=function(){lg('RX unmute');var l=$('led');if(l&&!l.classList.contains('tx'))l.classList.add('rx')};
     e.track.onmute=function(){var l=$('led');if(l)l.classList.remove('rx')};
+  };
   };
   pc.onicecandidate=function(e){
     if(e.candidate)wsSend({type:'ice-candidate',to:tg,candidate:e.candidate});
@@ -432,14 +445,19 @@ function ST(e){
 }
 function SP(e){
   if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
-  /* 1) MUTE MIC SEMUA — kritis! */
-  if(ls)ls.getAudioTracks().forEach(function(t){t.enabled=false});
-  /* 2) UNMUTE SPEAKER */
-  ra.volume=1;
-  if(rTrack)rTrack.enabled=true;
-  $('pb').classList.remove('on');
-  $('led').classList.remove('tx');
-  lg('PTT OFF');
+  try{
+    if(ls&&ls.getAudioTracks)ls.getAudioTracks().forEach(function(t){try{t.enabled=false}catch(_){}});
+    /* restore speaker */
+    try{
+      ra.muted=false;
+      ra.volume=1;
+      var pp=ra.play();
+      if(pp&&pp.then)pp.catch(function(){});
+    }catch(_){}
+    var pb=$('pb');if(pb)pb.classList.remove('on');
+    var led=$('led');if(led)led.classList.remove('tx');
+    lg('PTT OFF vol=1');
+  }catch(err){lg('SP err',err.message)}
 }
 
 /* ============== VU METER (read-only analyser) ============== */
