@@ -272,7 +272,7 @@ async function A(){
 }
 async function oa(m){try{if(!pc)return;await pc.setRemoteDescription(new RTCSessionDescription(m.sdp));rds=1;await fc();[0,300,1000].forEach(t=>setTimeout(ll,t))}catch(e){lg('ans',e)}}
 async function oi(m){if(!pc)return;const c=new RTCIceCandidate(m.candidate);if(!rds){pend.push(c);return}try{await pc.addIceCandidate(c)}catch(e){}}
-function U(a){ra.muted=false;ra.volume=1;ra.play().then(()=>{if(a)ts('🔊 audio','k')}).catch(()=>{if(a)ts('tap lagi','e')});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
+function U(a){ra.muted=false;ra.volume=(echoGate===1&&document.getElementById('pb').classList.contains('on'))?0:1;ra.play().then(()=>{if(a)ts('🔊 audio','k')}).catch(()=>{if(a)ts('tap lagi','e')});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
 function R(){
   const n=cl($('mn').value);
   if(!n)return ts('masukkan nomor','e');
@@ -365,6 +365,86 @@ function ptimeMunge(sdp){
     return 'a=fmtp:'+pt+' '+p;
   });
 }
+let echoGate=0,micGate=0,micAnalyser=null,micSource=null,micData=null,gateRaf=null,lastVoice=0;
+const GATE_NAMES=['NORMAL','ECHO-GATE','CLEAN-GATE'];
+function buildGateBtn(){
+  const keys=document.querySelector('.keys');if(!keys||document.getElementById('gbtn'))return;
+  const b=document.createElement('button');
+  b.id='gbtn';b.className='k';b.textContent='◎';b.title='Echo/Clean Gate';
+  b.onclick=toggleGate;
+  keys.appendChild(b);
+  lg('🎛️ Tombol gate di-inject');
+}
+function toggleGate(){
+  echoGate=(echoGate+1)%3;
+  const b=document.getElementById('gbtn');
+  const led=document.getElementById('led');
+  b.textContent=['◎','◉','◍'][echoGate];
+  b.style.borderColor=['#2a2a35','#00e0ff','#00ff88'][echoGate];
+  b.style.color=['#888','#00e0ff','#00ff88'][echoGate];
+  ts('🎛️ '+GATE_NAMES[echoGate],echoGate===0?'':'k');
+  lg('Gate →',GATE_NAMES[echoGate]);
+  // CLEAN-GATE: aktifkan mic noise gate
+  if(echoGate===2){startMicGate()}else{stopMicGate()}
+  // ECHO-GATE: matikan RA saat TX
+  if(echoGate===0&&led)led.classList.remove('echo');
+}
+function startMicGate(){
+  if(micGate)return;micGate=1;
+  try{
+    if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'})}catch{return}}
+    if(ac.state==='suspended')ac.resume().catch(()=>{});
+    if(!ls||!ls.getAudioTracks().length)return;
+    if(!micAnalyser){micAnalyser=ac.createAnalyser();micAnalyser.fftSize=256}
+    micSource=ac.createMediaStreamSource(ls);
+    micSource.connect(micAnalyser);
+    micData=new Uint8Array(micAnalyser.frequencyBinCount);
+    const loop=()=>{
+      if(!micGate||!micData){gateRaf=null;return}
+      micAnalyser.getByteFrequencyData(micData);
+      let x=0;for(let i=0;i<micData.length;i++)x+=micData[i];
+      const avg=x/micData.length;
+      // Threshold: 4 (0-255). Kalau di bawah → mute mic (noise gate)
+      const t=ls.getAudioTracks()[0];
+      if(t){
+        const pttOn=document.getElementById('pb').classList.contains('on');
+        if(pttOn){
+          if(avg<4){t.enabled=false}else{t.enabled=true}
+        }
+      }
+      gateRaf=requestAnimationFrame(loop);
+    };
+    loop();
+    lg('🎤 CLEAN-GATE aktif');
+  }catch(e){lg('micGate err',e.message)}
+}
+function stopMicGate(){
+  micGate=0;
+  if(gateRaf){cancelAnimationFrame(gateRaf);gateRaf=null}
+  try{micSource&&micSource.disconnect()}catch(_){}
+  micSource=null;
+  lg('🎤 mic gate off');
+}
+function applyEchoGate(){
+  // Dipanggil dari ST(): kalau echoGate=1, mute RA saat TX
+  if(echoGate===1){
+    ra.volume=0;
+    const led=document.getElementById('led');if(led)led.classList.add('echo');
+  }else{
+    ra.volume=.3;
+  }
+}
+function releaseEchoGate(){
+  ra.volume=1;
+  const led=document.getElementById('led');if(led)led.classList.remove('echo');
+}
+// CSS tambahan untuk LED echo
+if(!document.getElementById('gateCss')){
+  const st=document.createElement('style');st.id='gateCss';
+  st.textContent='.ind.echo{background:#00e0ff;box-shadow:0 0 18px #00e0ff,0 0 32px #00e0ff}';
+  document.head.appendChild(st);
+}
+buildGateBtn();
 wsC();
 'serviceWorker' in navigator && navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const uo=()=>{const b=$('ob');if(navigator.onLine)b.classList.remove('on');else{b.classList.add('on');net('','OFFLINE')}};
