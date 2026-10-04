@@ -66,7 +66,7 @@ function ts(m,c){var e=$('ts');e.textContent=m;e.className=(c?'on '+c:'on');clea
 var ws=null,wr=false,retry=0,pingT=null;
 var my=localStorage.getItem('myNo')||'';
 var tg='',caller=false;
-var pc=null,ls=null,rs=null,pend=[],rds=false;
+var pc=null,ls=null,rs=null,pend=[],rds=false,activeTx=null;
 var po=null,pf=null;
 var ra=$('ra');
 ra.muted=false;ra.volume=1;
