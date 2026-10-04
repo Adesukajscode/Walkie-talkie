@@ -174,7 +174,7 @@ function cp(){
   pc.ontrack=e=>{
     lg('📥 ONTRACK',e.track.kind);
     if(e.streams&&e.streams[0])rs=e.streams[0];else{if(!rs)rs=new MediaStream();rs.addTrack(e.track)}
-    ra.srcObject=rs;ra.muted=false;ra.volume=1;
+    ra.srcObject=rs;try{ra.muted=true}catch(_){};initRxChain(rs);
     const p=()=>ra.play().catch(()=>{try{ra.muted=true;ra.play().then(()=>ra.muted=false)}catch(_){}});
     p();setTimeout(p,300);setTimeout(p,1000);
     mt(rs);
@@ -308,6 +308,65 @@ function SP(e){
   ls.getAudioTracks().forEach(t=>t.enabled=false);
   $('pb').classList.remove('on');lg('🔇 OFF');
 }
+let rxChain=null,rxLevel=1,fbCount=0,fbLast=0,tailTimer=null;
+function setRxLevel(v,ramp){
+  rxLevel=v;
+  if(!rxChain){try{ra.volume=v}catch(_){};return}
+  try{
+    const t=ac.currentTime;
+    rxChain.gain.gain.cancelScheduledValues(t);
+    if(ramp){rxChain.gain.gain.setValueAtTime(rxChain.gain.gain.value,t);rxChain.gain.gain.linearRampToValueAtTime(v,t+ramp)}
+    else{rxChain.gain.gain.setValueAtTime(v,t)}
+  }catch(e){}
+  // Safety: kalau Web Audio gagal, fallback ke ra.volume
+  try{ra.volume=Math.max(v,.001)}catch(_){}
+}
+function initRxChain(stream){
+  if(rxChain)return;
+  try{
+    if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'})}catch{return}}
+    if(ac.state==='suspended')ac.resume().catch(()=>{});
+    const src=ac.createMediaStreamSource(stream);
+    const gain=ac.createGain();gain.gain.value=1;
+    const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=120;hp.Q.value=.7;
+    const lim=ac.createDynamicsCompressor();
+    lim.threshold.value=-6;lim.knee.value=6;lim.ratio.value=12;lim.attack.value=.003;lim.release.value=.1;
+    src.connect(hp).connect(gain).connect(lim).connect(ac.destination);
+    rxChain={src,gain,hp,lim};
+    // Matikan playback lewat <audio> — pakai Web Audio saja (cegah double playback)
+    try{ra.muted=true}catch(_){}
+    lg('🔊 RX chain via WebAudio (hard-mute capable)');
+  }catch(e){lg('initRxChain err',e.message)}
+}
+function feedbackCheck(){
+  // Monitor mic + remote, deteksi pola energy tinggi sustained saat PTT
+  if(!rxChain||!micAnalyser||!micData||!an)return;
+  const pttOn=document.getElementById('pb').classList.contains('on');
+  if(!pttOn){fbCount=0;return}
+  // Remote energy
+  try{an.getByteFrequencyData(micData);let x=0;for(let i=0;i<micData.length;i++)x+=micData[i];const rxAvg=x/micData.length}catch(e){}
+  // Mic energy
+  try{
+    if(!window._micBuf)_micBuf=new Uint8Array(micAnalyser.frequencyBinCount);
+    micAnalyser.getByteFrequencyData(_micBuf);
+    let m=0;for(let i=0;i<_micBuf.length;i++)m+=_micBuf[i];const micAvg=m/_micBuf.length;
+    // Kalau mic tangkap energy tinggi SEMENTARA PTT → kemungkinan speaker feedback
+    if(micAvg>35){
+      const now=Date.now();
+      if(now-fbLast<300)fbCount++;else fbCount=1;
+      fbLast=now;
+      if(fbCount>=2){
+        lg('⚠️ FEEDBACK terdeteksi → force mute speaker');
+        setRxLevel(0,0);
+        try{ra.muted=true}catch(_){}
+        ts('⚠️ Echo gate aktif','e');
+        fbCount=0;
+        setTimeout(()=>{try{ra.muted=false}catch(_){};setRxLevel(1,.3)},800);
+      }
+    }else{fbCount=0}
+  }catch(e){}
+}
+setInterval(feedbackCheck,250);
 function buildAnt(){
   const a=document.querySelector('.ant');if(!a||a.dataset.built)return;
   a.dataset.built='1';
@@ -431,16 +490,12 @@ function stopMicGate(){
   lg('🎤 mic gate off');
 }
 function applyEchoGate(){
-  // Dipanggil dari ST(): kalau echoGate=1, mute RA saat TX
-  if(echoGate===1){
-    ra.volume=0;
-    const led=document.getElementById('led');if(led)led.classList.add('echo');
-  }else{
-    ra.volume=.3;
-  }
+  // Echo gate: kalau mode 1 atau 2, mute total. Mode 0 = hard mute juga saat PTT (fix feedback)
+  setRxLevel(0,0);
+  if(echoGate===1){const led=document.getElementById('led');if(led)led.classList.add('echo')}
 }
 function releaseEchoGate(){
-  ra.volume=1;
+  setRxLevel(1,.1);
   const led=document.getElementById('led');if(led)led.classList.remove('echo');
 }
 // CSS tambahan untuk LED echo
