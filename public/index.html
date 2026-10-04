@@ -19,7 +19,7 @@
 <div class=keys><button class=k onclick=E()>⏻</button><button class=k onclick=U(1)>🔊</button><button class=k onclick=L()>↻</button></div>
 </div>
 </div>
-<div id=rs class=panel><input type=tel id=mn placeholder="08..." inputmode=numeric autocomplete=off maxlength=15><button class="pb b1" id=rb onclick=R() disabled>Mulai</button></div>
+<div id=rs class=panel><input type=tel id=mn placeholder="08..." inputmode=numeric autocomplete=off maxlength=15><button class="pb b1" id=rb onclick=R()>Mulai</button></div>
 <div id=cs class="panel h"><input type=tel id=tn placeholder="nomor tujuan" inputmode=numeric autocomplete=off maxlength=15><button class="pb b2" id=cb onclick=C()>Panggil</button></div>
 </div>
 <div class=n id=n><div class=card><div class=ico>📞</div><p>panggilan masuk<b id=ci>----</b></p><div class=acts><button class=yes onclick=A()>Terima</button><button class=no onclick=X()>Tolak</button></div></div></div>
@@ -30,8 +30,16 @@ let tt;const ts=(m,c='')=>{const e=$('ts');e.textContent=m;e.className='ts on '+
 const WU=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
 let ws,wr=0,retry=0,pt=0,my=localStorage.getItem('myNo')||'',tg='',caller=0,pc,ls,rs,pend=[],rds=0,raf,rp=0,rT,po=null,pf=null,ac,an,dt=null,myLoc=null,peerLoc=null,activeTx=null,ngOn=0,echoGate=0,rxChain=null,rxLevel=1,micAnalyser=null,micData=null,fbCount=0,fbLast=0,tailTimer=null,ngNodes=null;
 const ra=$('ra');ra.muted=true;
-const net=(s,t)=>{$('led').className='ind'+(s==='ok'?' o':(s==='w'?' n':''));$('nt').textContent=t.toUpperCase();$('rb').disabled=s!=='ok';$('cb').disabled=s!=='ok'};
-const rbR=()=>{$('rb').textContent='Mulai';$('rb').disabled=0;$('mn').disabled=0};
+const net=(s,t)=>{
+  $('led').className='ind'+(s==='ok'?' o':(s==='w'?' n':''));
+  $('nt').textContent=t.toUpperCase();
+  const cb=$('cb');if(cb)cb.disabled=s!=='ok';
+};
+const rbR=()=>{
+  const rb=$('rb');if(!rb)return;
+  rb.textContent='Mulai';rb.disabled=0;
+  $('mn').disabled=0;
+};
 fetch('/prewarm').catch(()=>{});
 let lp=null;
 async function gm(){
@@ -369,11 +377,19 @@ function R(){
   if(n.length<8)return ts('min 8 digit','e');
   if(n.length>15)return ts('kepanjangan','e');
   if(!/^(0|62)?8\d{7,13}$/.test(n))return ts('format 08xxx','e');
-  if(!wr)return ts('belum konek','e');
-  my=n;localStorage.setItem('myNo',n);rp=1;wsS({type:'register',no:n});
+  my=n;localStorage.setItem('myNo',n);
   $('rb').textContent='...';$('rb').disabled=1;$('mn').disabled=1;
-  clearTimeout(rT);rT=setTimeout(()=>{if(rp){ts('timeout','e');rp=0;rbR()}},8e3);
+  clearTimeout(rT);
+  if(wr&&ws&&ws.readyState===1){
+    rp=1;wsS({type:'register',no:n});
+    rT=setTimeout(()=>{if(rp){ts('timeout','e');rp=0;rbR()}},8e3);
+  }else{
+    lg('⏳ WS belum ready, queue register');
+    ts('⏳ Menyambung ke server...','k');
+    rT=setTimeout(()=>{if(rp===0){ts('timeout server','e');$('rb').textContent='Mulai';$('rb').disabled=0;$('mn').disabled=0}},12e3);
+  }
 }
+
 function L(){try{wsS({type:'unregister'});E()}catch(_){}localStorage.removeItem('myNo');setTimeout(()=>location.reload(),200)}
 function X(){$('n').classList.remove('on');if(pf)wsS({type:'reject-call',to:pf});po=null;pf=null}
 function E(){if(tg&&wr)wsS({type:'end-call',to:tg});cl_();ts('selesai')}
@@ -409,6 +425,26 @@ function SP(e){
   tailTimer=setTimeout(()=>{releaseEchoGate();const led=$('led');if(led)led.classList.remove('echo')},200);
   lg('🔇OFF');
 }
+
+(function setupInput(){
+  const mn=$('mn');
+  if(mn){
+    mn.addEventListener('input',()=>{
+      const rb=$('rb');
+      if(rb&&rb.textContent==='Mulai')rb.disabled=false;
+    });
+    mn.addEventListener('keydown',e=>{if(e.key==='Enter')R()});
+  }
+})();
+
+function autoRetryWS(){
+  if(!wr){
+    lg('🔄 auto-retry WS');
+    try{wsC()}catch(e){}
+  }
+  setTimeout(autoRetryWS,8000);
+}
+setTimeout(autoRetryWS,3000);
 wsC();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const uo=()=>{const b=$('ob');if(navigator.onLine)b.classList.remove('on');else{b.classList.add('on');net('','OFFLINE')}};
