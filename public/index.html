@@ -27,7 +27,7 @@ button:not(:disabled):active{transform:scale(.96)}
 .st.ok{color:var(--lm);background:rgba(0,255,136,.08)}
 #ms{color:var(--cy);font-weight:600}
 #ol{font-size:.72rem}
-.ptt{width:100%;padding:24px;font-size:1rem;font-weight:800;border-radius:60px;margin-top:14px;color:var(--lm);background:rgba(0,255,136,.1);border:2px solid var(--lm);letter-spacing:2px;transition:.15s}
+.ptt{width:100%;padding:24px;font-size:1rem;font-weight:800;border-radius:60px;margin-top:14px;color:var(--lm);background:rgba(0,255,136,.1);border:2px solid var(--lm);letter-spacing:2px;transition:.15s;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .ptt.on{background:rgba(255,45,149,.15);border-color:var(--mg);color:var(--mg)}
 .nf{padding:16px;margin:12px 0;background:rgba(255,183,0,.1);border:1px solid var(--yl);border-radius:12px;text-align:center;display:none}
 .nf.on{display:block}
@@ -57,7 +57,7 @@ button:not(:disabled):active{transform:scale(.96)}
 <div class=ig><input type=tel id=tn placeholder="Nomor tujuan" inputmode=numeric autocomplete=off maxlength=15><button class=s id=cb onclick=C()>Panggil</button></div>
 <div class=vw><div class=vu id=vu></div></div>
 <div id=ah>Level suara</div>
-<button class=ptt id=pb disabled onmousedown="startTalk(event)" onmouseup="stopTalk(event)" onmouseleave="stopTalk(event)" ontouchstart="startTalk(event)" ontouchend="stopTalk(event)" ontouchcancel="stopTalk(event)">TAHAN UNTUK BICARA</button>
+<button class=ptt id=pb disabled ontouchstart="startTalk(event)" ontouchend="stopTalk(event)" ontouchcancel="stopTalk(event)" onmousedown="startTalk(event)" onmouseup="stopTalk(event)" onmouseleave="stopTalk(event)">TAHAN UNTUK BICARA</button>
 <div class=r><button class=d onclick=E()>Akhiri</button><button class=w onclick=U(1)>🔊 Audio</button></div>
 <div class=r><button class=p onclick=L()>Ganti Nomor</button></div>
 </div>
@@ -142,7 +142,7 @@ function cp(){
     lg('PC:',pc.connectionState);
     if(pc.connectionState==='connected'){
       $('ms').textContent='LIVE: '+tg;$('ms').className='st ok';
-      $('pb').disabled=false;$('pb').classList.remove('on');$('pb').textContent='TAHAN UNTUK BICARA';micMuted=true;ls.getAudioTracks().forEach(t=>t.enabled=false);
+      $('pb').disabled=false;if(!$('pb').classList.contains('on')){$('pb').textContent='TAHAN UNTUK BICARA';micMuted=true;if(ls)ls.getAudioTracks().forEach(t=>t.enabled=false);}
       ts('✅ Tersambung','ok');
       // Verbose: cek kedua arah
       setTimeout(()=>{
@@ -299,13 +299,13 @@ function startTalk(e){
   lg('PTT ON');
 }
 function stopTalk(e){
-  if(e)e.preventDefault();
+  if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
   if(!ls)return;
-  micMuted=true;
   ls.getAudioTracks().forEach(t=>t.enabled=false);
+  micMuted=true;
   $('pb').classList.remove('on');
   $('pb').textContent='TAHAN UNTUK BICARA';
-  lg('PTT OFF');
+  lg('🔇 PTT OFF');
 }
 wsConn();
 </script></body></html>
