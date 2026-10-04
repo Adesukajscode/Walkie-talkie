@@ -151,6 +151,12 @@ button:not(:disabled):active{transform:scale(.96)}
 .ts.on{transform:translateX(-50%) translateY(0)}
 .ts.err{border-color:var(--rd);color:var(--rd)}
 .ts.ok{border-color:var(--lm);color:var(--lm)}
+.info-panel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}
+.info-box{background:rgba(0,0,0,.35);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;text-align:center}
+.info-box .lbl{font-size:.6rem;color:var(--mu);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px}
+.info-box .val{font-size:.95rem;font-weight:700;color:var(--cy);font-family:'Courier New',monospace;letter-spacing:.5px;display:block}
+.info-box .unit{font-size:.65rem;color:var(--mu);font-weight:400;margin-left:2px}
+.info-box.accent .val{color:var(--mg)}
 </style></head><body>
 <div class=ts id=ts></div>
 <audio id=ra autoplay playsinline></audio>
@@ -162,6 +168,10 @@ button:not(:disabled):active{transform:scale(.96)}
 <div class=st id=ms>-</div>
 <div class=st id=ol>Online: -</div>
 <div class=ig><input type=tel id=tn placeholder="Nomor tujuan" inputmode=numeric autocomplete=off maxlength=15><button class=s id=cb onclick=C()>Panggil</button></div>
+<div class=info-panel>
+<div class=info-box><span class=lbl>📍 Jarak</span><span class=val id=distVal>—<span class=unit id=distUnit></span></span></div>
+<div class=info-box accent><span class=lbl>🎵 Frekuensi</span><span class=val id=freqVal>—<span class=unit>Hz</span></span></div>
+</div>
 <div class=vw><div class=vu id=vu></div></div>
 <div id=ah>Level suara</div>
 <button class=ptt id=pb disabled ontouchstart="startTalk(event)" ontouchend="stopTalk(event)" ontouchcancel="stopTalk(event)" onmousedown="startTalk(event)" onmouseup="stopTalk(event)" onmouseleave="stopTalk(event)">TAHAN UNTUK BICARA</button>
@@ -182,9 +192,14 @@ const ra=$('ra');ra.volume=1;ra.muted=false;
 const net=(s,t)=>{$('dot').className='dot'+(s==='ok'?' on':(s==='w'?' wn':''));$('spin').className='spin'+(s==='ok'?'':' on');$('nt').textContent=t;$('rb').disabled=s!=='ok';$('cb').disabled=s!=='ok'};
 function rbReset(){$('rb').textContent='Daftar';$('rb').disabled=0;$('mn').disabled=0}
 fetch('/prewarm').catch(()=>{});
-function makeClipCurve(k){
-  const n=4096,c=new Float32Array(n);
-  for(let i=0;i<n;i++){const x=(i*2)/n-1;c[i]=(2/Math.PI)*Math.atan(x*k)}
+function makeClipCurve(k,a){
+  a=(a===undefined)?0.4:a;
+  const n=4096,c=new Float32Array(n),norm=Math.atan(k);
+  for(let i=0;i<n;i++){
+    const x=(i*2)/n-1;
+    const kk=(x>=0)?k:k*(1-a);
+    c[i]=Math.atan(x*kk)/norm;
+  }
   return c;
 }
 function makeNoiseBuf(sec){
@@ -268,44 +283,67 @@ function cp(){
     lg('📥 ONTRACK | kind=',e.track.kind,'| enabled=',e.track.enabled);
     if(e.streams&&e.streams[0])rst=e.streams[0];
     else{if(!rst)rst=new MediaStream();rst.addTrack(e.track)}
-    ra.srcObject=rst;ra.muted=true;
+    // ⚠️ ra TIDAK diset ke rst — akan di-replace oleh DSP stream
+    ra.muted=true;
     if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
     const build=()=>{
       if(!ac||htChain)return;
       try{
+        if(!an){an=ac.createAnalyser();an.fftSize=256}
         const src=ac.createMediaStreamSource(rst);
-        const inG=ac.createGain();inG.gain.value=2.8;
+        const inG=ac.createGain();inG.gain.value=3.2;
         const agc=ac.createDynamicsCompressor();
-        agc.threshold.value=-30;agc.knee.value=4;agc.ratio.value=12;
-        agc.attack.value=0.002;agc.release.value=0.09;
-        const hp1=ac.createBiquadFilter();hp1.type='highpass';hp1.frequency.value=300;hp1.Q.value=0.7;
-        const hp2=ac.createBiquadFilter();hp2.type='highpass';hp2.frequency.value=300;hp2.Q.value=0.7;
-        const lp1=ac.createBiquadFilter();lp1.type='lowpass';lp1.frequency.value=3000;lp1.Q.value=0.7;
-        const lp2=ac.createBiquadFilter();lp2.type='lowpass';lp2.frequency.value=3000;lp2.Q.value=0.7;
-        const pk=ac.createBiquadFilter();pk.type='peaking';pk.frequency.value=1800;pk.gain.value=9;pk.Q.value=1.4;
-        const cut=ac.createBiquadFilter();cut.type='peaking';cut.frequency.value=800;cut.gain.value=-4;cut.Q.value=2;
-        const pre=ac.createBiquadFilter();pre.type='highshelf';pre.frequency.value=1500;pre.gain.value=4;
-        const clip=ac.createWaveShaper();clip.curve=makeClipCurve(7);clip.oversample='4x';
-        const out=ac.createGain();out.gain.value=2.0;
+        agc.threshold.value=-32;agc.knee.value=3;agc.ratio.value=14;
+        agc.attack.value=0.001;agc.release.value=0.08;
+        // Bandpass lebih tipis (400-2800)
+        const hp1=ac.createBiquadFilter();hp1.type='highpass';hp1.frequency.value=400;hp1.Q.value=0.8;
+        const hp2=ac.createBiquadFilter();hp2.type='highpass';hp2.frequency.value=400;hp2.Q.value=0.8;
+        const lp1=ac.createBiquadFilter();lp1.type='lowpass';lp1.frequency.value=2800;lp1.Q.value=0.8;
+        const lp2=ac.createBiquadFilter();lp2.type='lowpass';lp2.frequency.value=2800;lp2.Q.value=0.8;
+        // Presence tajam — SEMBER
+        const pk=ac.createBiquadFilter();pk.type='peaking';pk.frequency.value=2000;pk.gain.value=12;pk.Q.value=1.8;
+        // Honk cut dalam
+        const cut=ac.createBiquadFilter();cut.type='peaking';cut.frequency.value=700;cut.gain.value=-8;cut.Q.value=2.2;
+        // Pre-emphasis
+        const pre=ac.createBiquadFilter();pre.type='highshelf';pre.frequency.value=1400;pre.gain.value=6;
+        // Asymmetric clip + oversample NONE = aliasing gritty + latency rendah
+        const clip=ac.createWaveShaper();clip.curve=makeClipCurve(11,0.4);clip.oversample='none';
+        const out=ac.createGain();out.gain.value=2.3;
+        // ⚡ DEST: DSP di-route ke <audio> via MediaStream → AEC bekerja → NO ECHO
+        const dest=ac.createMediaStreamDestination();
+        // Noise floor
         const ns=ac.createBufferSource();ns.buffer=makeNoiseBuf(3);ns.loop=true;
-        const nf=ac.createBiquadFilter();nf.type='bandpass';nf.frequency.value=2200;nf.Q.value=0.6;
-        const ng=ac.createGain();ng.gain.value=0.006;
+        const nf=ac.createBiquadFilter();nf.type='bandpass';nf.frequency.value=2400;nf.Q.value=0.7;
+        const ng=ac.createGain();ng.gain.value=0.008;
+        // Chain utama → dest
         src.connect(inG).connect(agc).connect(hp1).connect(hp2).connect(lp1).connect(lp2)
-           .connect(pk).connect(cut).connect(pre).connect(clip).connect(out).connect(ac.destination);
+           .connect(pk).connect(cut).connect(pre).connect(clip).connect(out);
+        out.connect(dest);
+        // VU tap (tidak ke speaker)
+        out.connect(an);
         ns.connect(nf).connect(ng).connect(out);
         ns.start();
-        htChain={src,inG,agc,hp1,hp2,lp1,lp2,pk,cut,pre,clip,out,ns,ng};
-        lg('📻 HT CHAIN AKTIF (full DSP)');
+        // Set ra ke DSP output
+        ra.srcObject=dest.stream;
+        ra.muted=false;ra.volume=1;
+        const go=()=>ra.play().then(()=>lg('🔊 DSP→ra OK')).catch(err=>{lg('ra play fail',err.message);try{ra.muted=true;ra.play().then(()=>{ra.muted=false})}catch(_){}});
+        go();setTimeout(go,300);
+        htChain={src,inG,agc,hp1,hp2,lp1,lp2,pk,cut,pre,clip,out,dest,ns,ng};
+        lg('📻 HT CHAIN AKTIF (DSP→MediaStream)');
         $('ah').textContent='📻 HT MODE — Mendengarkan';
+        // VU loop
+        cancelAnimationFrame(raf);
+        const d=new Uint8Array(an.frequencyBinCount);
+        const tk=()=>{an.getByteFrequencyData(d);let x=0;for(let i=0;i<d.length;i++)x+=d[i];$('vu').style.width=Math.min(100,x/d.length*2.5)+'%';raf=requestAnimationFrame(tk)};
+        tk();
       }catch(err){lg('HT chain err',err.message)}
     };
     if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(_){}}
     if(ac&&ac.state==='suspended')ac.resume().then(build).catch(build);
     else build();
     setTimeout(build,200);setTimeout(build,800);
-    mt(rst);
-    e.track.onmute=()=>{lg('📥 remote MUTED → squelch tail');playSquelch(0.22,0.14)};
-    e.track.onunmute=()=>{lg('📥 remote UNMUTED');playSquelch(0.05,0.06)};
+    e.track.onmute=()=>{lg('📥 remote MUTED → squelch');playSquelch(0.2,0.12)};
+    e.track.onunmute=()=>{lg('📥 remote UNMUTED');playSquelch(0.04,0.05)};
   };
   pc.onicecandidate=e=>{if(e.candidate)wsSend({type:'ice-candidate',to:tg,candidate:e.candidate})};
   pc.oniceconnectionstatechange=()=>lg('ICE:',pc.iceConnectionState);
@@ -315,7 +353,7 @@ function cp(){
       $('ms').textContent='LIVE: '+tg;$('ms').className='st ok';
       $('pb').disabled=false;
       if(!$('pb').classList.contains('on')){$('pb').textContent='TAHAN UNTUK BICARA';micMuted=true;if(ls)ls.getAudioTracks().forEach(t=>t.enabled=false)}
-      ts('✅ Tersambung','ok');
+      ts('✅ Tersambung','ok');startDistLoop();
       // ══════ BILATERAL CHECK ══════
       setTimeout(()=>{
         lg('══════ BILATERAL CHECK ══════');
@@ -345,8 +383,80 @@ function mt(s){
     ac.createMediaStreamSource(s).connect(an); // HANYA analyser, TIDAK ke destination → tidak echo
   }catch(e){return}
   const d=new Uint8Array(an.frequencyBinCount);cancelAnimationFrame(raf);
-  const tk=()=>{an.getByteFrequencyData(d);let x=0;for(let i=0;i<d.length;i++)x+=d[i];$('vu').style.width=Math.min(100,x/d.length*2.5)+'%';raf=requestAnimationFrame(tk)};tk();
+  let fqTick=0;
+        const tk=()=>{an.getByteFrequencyData(d);let x=0;for(let i=0;i<d.length;i++)x+=d[i];$('vu').style.width=Math.min(100,x/d.length*2.5)+'%';
+          if((fqTick++&3)===0){const r=computeFreq(d);updateFreqUI(r.hz,r.maxVal)}
+          raf=requestAnimationFrame(tk)};tk();
 }
+// ═══ JARAK via RTT ═══
+let distTimer=null,lastRtt=0;
+async function updateDistance(){
+  if(!pc||pc.connectionState!=='connected')return;
+  try{
+    const stats=await pc.getStats();
+    let rtt=null,localCand=null,remoteCand=null;
+    stats.forEach(r=>{
+      if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.nominated){
+        if(r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime;
+      }
+      if(r.type==='local-candidate')localCand=r;
+      if(r.type==='remote-candidate')remoteCand=r;
+    });
+    if(rtt==null){
+      // fallback: cari candidate-pair apapun
+      stats.forEach(r=>{if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime});
+    }
+    if(rtt!=null&&rtt>0){
+      // Jarak estimasi: RTT/2 × kecepatan propagasi
+      // Fiber ~200,000 km/s; udara ~300,000 km/s → rata-rata ~200,000 km/s
+      const c=200000; // km/s
+      const sec=rtt/2;
+      let km=sec*c;
+      // Kurangi overhead prosesing ~5ms → setengah nilai jadi lebih realistis
+      km=Math.max(0,km-(0.005*c/2));
+      let txt,unit;
+      if(km<1){txt=(km*1000).toFixed(0);unit=' m'}
+      else if(km<1000){txt=km.toFixed(1);unit=' km'}
+      else{txt=(km/1000).toFixed(2);unit=' Mm'}
+      const dv=$('distVal'),du=$('distUnit');
+      if(dv&&du){dv.firstChild.textContent=txt;du.textContent=unit}
+      lastRtt=rtt;
+      lg('📍 RTT=',(rtt*1000).toFixed(1),'ms → jarak≈',txt+unit);
+    } else {
+      // RTT belum tersedia, tampilkan '—'
+      const dv=$('distVal');if(dv)dv.firstChild.textContent='—';
+    }
+  }catch(e){}
+}
+function startDistLoop(){
+  clearInterval(distTimer);
+  distTimer=setInterval(updateDistance,1500);
+  setTimeout(updateDistance,500);
+}
+function stopDistLoop(){
+  clearInterval(distTimer);distTimer=null;
+  const dv=$('distVal');if(dv)dv.firstChild.textContent='—';
+}
+
+// ═══ FREKUENSI DOMINAN (sudah pakai analyser existing) ═══
+function computeFreq(d){
+  // Cari bin dengan magnitude tertinggi
+  let maxVal=0,maxBin=0;
+  for(let i=1;i<d.length;i++){if(d[i]>maxVal){maxVal=d[i];maxBin=i}}
+  // Bin → Hz: sampleRate/fftSize × bin
+  const sr=ac?ac.sampleRate:48000;
+  const hz=maxBin*sr/(an.fftSize);
+  return {hz,maxVal};
+}
+function updateFreqUI(hz,mag){
+  const fv=$('freqVal');if(!fv)return;
+  if(mag<15){fv.firstChild.textContent='—';return}
+  fv.firstChild.textContent=hz<1000?hz.toFixed(0):(hz/1000).toFixed(2);
+  // Kalau >=1000, ganti unit ke kHz
+  const un=fv.querySelector('.unit');
+  if(un)un.textContent=hz<1000?'Hz':'kHz';
+}
+
 function wsConn(){
   lg('WS ->',WS_URL);net('w','Menghubungkan...');
   try{ws=new WebSocket(WS_URL)}catch(e){net('','LINK ERROR');setTimeout(wsConn,1500);return}
@@ -455,19 +565,19 @@ function H(){
   htOn=!htOn;
   $('htb').textContent=htOn?'📻 HT ON':'📻 HT OFF';
   if(htChain){
-    htChain.inG.gain.value=htOn?2.8:1;
-    htChain.agc.threshold.value=htOn?-30:0;
-    htChain.agc.ratio.value=htOn?12:1;
-    htChain.hp1.frequency.value=htOn?300:10;
-    htChain.hp2.frequency.value=htOn?300:10;
-    htChain.lp1.frequency.value=htOn?3000:20000;
-    htChain.lp2.frequency.value=htOn?3000:20000;
-    htChain.pk.gain.value=htOn?9:0;
-    htChain.cut.gain.value=htOn?-4:0;
-    htChain.pre.gain.value=htOn?4:0;
-    htChain.clip.curve=htOn?makeClipCurve(7):null;
-    htChain.out.gain.value=htOn?2.0:1;
-    htChain.ng.gain.value=htOn?0.006:0;
+    htChain.inG.gain.value=htOn?3.2:1;
+    htChain.agc.threshold.value=htOn?-32:0;
+    htChain.agc.ratio.value=htOn?14:1;
+    htChain.hp1.frequency.value=htOn?400:20;
+    htChain.hp2.frequency.value=htOn?400:20;
+    htChain.lp1.frequency.value=htOn?2800:20000;
+    htChain.lp2.frequency.value=htOn?2800:20000;
+    htChain.pk.gain.value=htOn?12:0;
+    htChain.cut.gain.value=htOn?-8:0;
+    htChain.pre.gain.value=htOn?6:0;
+    htChain.clip.curve=htOn?makeClipCurve(11,0.4):null;
+    htChain.out.gain.value=htOn?2.3:1;
+    htChain.ng.gain.value=htOn?0.008:0;
   }
   if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
   ts(htOn?'📻 HT MODE':'🔊 NORMAL','ok');
@@ -492,7 +602,7 @@ function E(){if(tg&&wsReady)wsSend({type:'end-call',to:tg});cl_();$('ms').textCo
 function cl_(){
   try{pc&&pc.close()}catch(_){}pc=null;
   try{ls&&ls.getTracks().forEach(t=>t.stop())}catch(_){}ls=null;lsProm=null;
-  rst=null;ra.srcObject=null;if(htChain){try{htChain.src.disconnect();htChain.out.disconnect();htChain.ns.stop()}catch(_){}htChain=null}
+  rst=null;ra.srcObject=null;stopDistLoop();if(htChain){try{htChain.src.disconnect();htChain.out.disconnect();htChain.ns.stop();htChain.dest.disconnect()}catch(_){}htChain=null}
   pend=[];rds=0;cancelAnimationFrame(raf);$('vu').style.width='0';
   micMuted=true;$('pb').disabled=true;$('pb').classList.remove('on');$('pb').textContent='🎙 MIC ON';
   pendingOffer=null;pendingFrom=null;
