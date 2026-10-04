@@ -1,156 +1,121 @@
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
-    const upgrade = (req.headers.get('Upgrade') || '').toLowerCase();
-
-    // PRIORITAS 1: WebSocket — langsung ke DO, tidak lewat assets
-    if (upgrade === 'websocket') {
-      const id = env.ROOM.idFromName('global');
-      return env.ROOM.get(id).fetch(req);
+    const up = (req.headers.get('Upgrade') || '').toLowerCase();
+    if (up === 'websocket') {
+      return env.ROOM.get(env.ROOM.idFromName('global')).fetch(req);
     }
-
-    // Health & debug
-    if (u.pathname === '/health') {
-      return Response.json({ ok: 1, t: Date.now() });
-    }
+    if (u.pathname === '/health') return Response.json({ ok: 1 });
     if (u.pathname === '/users') {
       const r = await env.ROOM.get(env.ROOM.idFromName('global')).fetch('https://do/users');
       return new Response(await r.text(), { headers: { 'content-type': 'application/json' } });
     }
-    if (u.pathname === '/prewarm') {
-      try { await env.ROOM.get(env.ROOM.idFromName('global')).fetch('https://do/prewarm'); } catch (e) {}
-      return new Response('warmed');
-    }
-
-    // Fallback ke assets
     return env.ASSETS.fetch(req);
   }
 };
 
 export class Room {
-  constructor(state, env) {
+  constructor() {
     this.socks = new Map();
     this.wsNo = new Map();
   }
 
   async fetch(req) {
     const u = new URL(req.url);
-
-    if (u.pathname === '/users') {
-      return Response.json([...this.socks.keys()]);
+    if (u.pathname === '/users') return Response.json([...this.socks.keys()]);
+    if ((req.headers.get('Upgrade') || '').toLowerCase() !== 'websocket') {
+      return new Response('WS only', { status: 426 });
     }
-    if (u.pathname === '/prewarm') {
-      return new Response('ok');
-    }
-
-    const upgrade = (req.headers.get('Upgrade') || '').toLowerCase();
-    if (upgrade !== 'websocket') {
-      return new Response('Need WS, got: ' + upgrade, { status: 426 });
-    }
-
     const pair = new WebSocketPair();
-    const client = pair[0];
-    const server = pair[1];
-    server.accept();
-
-    server.addEventListener('message', (e) => {
-      try { this.onMsg(server, e.data); } catch (err) { console.log('msg err', err.message); }
+    const c = pair[0], s = pair[1];
+    s.accept();
+    s.addEventListener('message', (e) => {
+      try { this.msg(s, e.data); } catch (err) { console.log('err', err.message); }
     });
-    server.addEventListener('close', () => this.cleanup(server));
-    server.addEventListener('error', () => this.cleanup(server));
-
-    this.send(server, { type: 'welcome' });
-
-    return new Response(null, { status: 101, webSocket: client });
+    s.addEventListener('close', () => this.bye(s));
+    s.addEventListener('error', () => this.bye(s));
+    this.send(s, { type: 'welcome' });
+    return new Response(null, { status: 101, webSocket: c });
   }
 
-  onMsg(ws, raw) {
+  msg(ws, raw) {
     let m;
     try { m = JSON.parse(raw); } catch { return; }
     const t = m.type;
-    const cl = n => String(n || '').replace(/\D/g, '');
+    const clean = (n) => String(n || '').replace(/\D/g, '');
+    console.log('MSG', t);
 
     if (t === 'ping') return this.send(ws, { type: 'pong' });
 
     if (t === 'register') {
-      const no = cl(m.no);
-      if (!/^(0|62)?8\d{7,13}$/.test(no)) {
-        return this.send(ws, { type: 'error', msg: 'Nomor tidak valid' });
-      }
+      const no = clean(m.no);
+      if (no.length < 8) return this.send(ws, { type: 'error', msg: 'Nomor invalid' });
       const old = this.socks.get(no);
-      if (old && old !== ws) {
-        try { old.send(JSON.stringify({ type: 'force-logout' })); old.close(); } catch {}
-      }
+      if (old && old !== ws) { try { old.close(); } catch {} }
       this.socks.set(no, ws);
       this.wsNo.set(ws, no);
-      console.log('REG', no, 'total:', this.socks.size);
+      console.log('REG', no, 'total', this.socks.size);
       this.send(ws, { type: 'registered', no });
-      this.broadcastOnline();
+      this.online();
       return;
     }
 
-    if(t==='match'){
-      const me=this.wsNo.get(ws);
-      if(!me)return this.send(ws,{type:'error',msg:'Daftar dulu'});
-      const others=[...this.socks.keys()].filter(x=>x!==me);
-      if(!others.length)return this.send(ws,{type:'error',msg:'Tidak ada user lain online'});
-      const target=others[Math.floor(Math.random()*others.length)];
-      this.send(ws,{type:'match-target',no:target});
-      console.log('MATCH',me,'->',target);
+    if (t === 'match') {
+      const me = this.wsNo.get(ws);
+      if (!me) return this.send(ws, { type: 'error', msg: 'Daftar dulu' });
+      const others = [...this.socks.keys()].filter(x => x !== me);
+      if (!others.length) return this.send(ws, { type: 'error', msg: 'Tidak ada user lain' });
+      const target = others[Math.floor(Math.random() * others.length)];
+      console.log('MATCH', me, '->', target);
+      this.send(ws, { type: 'match-found', no: target });
       return;
     }
-    if (t === 'call-user') {
+
+    if (t === 'call') {
       const from = this.wsNo.get(ws);
-      const to = cl(m.to);
+      const to = clean(m.to);
       const target = this.socks.get(to);
       if (!from) return this.send(ws, { type: 'error', msg: 'Daftar dulu' });
-      if (!target) return this.send(ws, { type: 'call-error', msg: 'Nomor ' + to + ' tidak online' });
-      this.send(target, { type: 'incoming-call', from, offer: m.sdp });
+      if (!target) return this.send(ws, { type: 'error', msg: 'Nomor ' + to + ' tidak online' });
+      console.log('CALL', from, '->', to);
+      this.send(target, { type: 'incoming', from, sdp: m.sdp });
       return;
     }
 
-    if (t === 'accept-call') {
-      const target = this.socks.get(cl(m.to));
-      if (target) this.send(target, { type: 'call-accepted' });
+    if (t === 'accept') {
+      const target = this.socks.get(clean(m.to));
+      if (target) this.send(target, { type: 'accepted' });
       return;
     }
-    if (t === 'reject-call') {
-      const target = this.socks.get(cl(m.to));
-      if (target) this.send(target, { type: 'call-rejected' });
+    if (t === 'reject') {
+      const target = this.socks.get(clean(m.to));
+      if (target) this.send(target, { type: 'rejected' });
       return;
     }
-    if (t === 'end-call') {
-      const target = this.socks.get(cl(m.to));
-      if (target) this.send(target, { type: 'call-ended' });
+    if (t === 'end') {
+      const target = this.socks.get(clean(m.to));
+      if (target) this.send(target, { type: 'ended' });
       return;
     }
-
-    if (t === 'offer' || t === 'answer' || t === 'ice-candidate') {
+    if (t === 'sdp' || t === 'ice') {
       const from = this.wsNo.get(ws);
-      const target = this.socks.get(cl(m.to));
-      if (target) this.send(target, { type: t, from, sdp: m.sdp, candidate: m.candidate });
+      const target = this.socks.get(clean(m.to));
+      if (target) this.send(target, { type: t, from, sdp: m.sdp, ice: m.ice });
       return;
     }
-
-    if (t === 'unregister') this.cleanup(ws);
   }
 
-  cleanup(ws) {
+  bye(ws) {
     const no = this.wsNo.get(ws);
     if (no && this.socks.get(no) === ws) this.socks.delete(no);
     this.wsNo.delete(ws);
-    this.broadcastOnline();
+    this.online();
   }
 
-  send(ws, obj) {
-    try { ws.send(JSON.stringify(obj)); } catch {}
-  }
-
-  broadcastOnline() {
+  send(ws, o) { try { ws.send(JSON.stringify(o)); } catch {} }
+  online() {
     const list = [...this.socks.keys()];
     const msg = JSON.stringify({ type: 'online', list });
-    for (const ws of this.socks.values()) {
-      try { ws.send(msg); } catch {}
-    }
+    for (const ws of this.socks.values()) { try { ws.send(msg); } catch {} }
   }
 }
