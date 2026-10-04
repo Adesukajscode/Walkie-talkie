@@ -8,11 +8,11 @@ binding = "ASSETS"
 run_worker_first = true
 
 [durable_objects]
-bindings = [{ name = "ROOM", class_name = "Room" }]
+bindings = [{ name = "ROOM", class_name = "RoomV2" }]
 
 [[migrations]]
-tag = "v2"
-new_sqlite_classes = ["Room"]
+tag = "v3"
+new_sqlite_classes = ["RoomV2"]
 
 [observability]
 enabled = true

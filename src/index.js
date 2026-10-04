@@ -22,7 +22,7 @@ export default {
   }
 };
 
-export class Room {
+export class RoomV2 {
   constructor() {
     this.socks = new Map();
     this.wsNo = new Map();
