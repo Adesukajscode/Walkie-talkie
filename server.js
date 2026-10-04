@@ -1,90 +1,20 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
-
-app.use(express.static('public'));
-
-// nomor -> socket.id
-const users = new Map();
-
-// Endpoint debug: buka https://xxx.trycloudflare.com/users di browser
-app.get('/users', (req, res) => res.json([...users.keys()]));
-
-const clean = (n) => String(n || '').replace(/\D/g, ''); // buang semua non-digit
-
-io.on('connection', (socket) => {
-  console.log('[+] socket', socket.id);
-
-  socket.on('register', (raw) => {
-    const noHp = clean(raw);
-    if (noHp.length < 8) {
-      socket.emit('register-error', 'Nomor tidak valid');
-      return;
-    }
-    // Kalau nomor sama sudah dipakai socket lain, tendang yang lama
-    const old = users.get(noHp);
-    if (old && old !== socket.id) io.to(old).emit('force-logout');
-
-    users.set(noHp, socket.id);
-    socket.noHp = noHp;
-    console.log(`[REG] ${noHp} => ${socket.id}`);
-    console.log(`      ONLINE: [${[...users.keys()].join(', ')}]`);
-    socket.emit('registered', noHp);
-  });
-
-  socket.on('call-user', ({ to }) => {
-    const target = clean(to);
-    console.log(`[CALL] ${socket.noHp} -> ${target}`);
-    const targetId = users.get(target);
-    if (!targetId) {
-      const online = [...users.keys()].join(', ') || '(belum ada)';
-      console.log(`      GAGAL: ${target} tidak online`);
-      return socket.emit('call-error', `Nomor ${target} tidak online. Online: ${online}`);
-    }
-    io.to(targetId).emit('incoming-call', { from: socket.noHp });
-  });
-
-  socket.on('accept-call', ({ to }) => {
-    const tid = users.get(clean(to));
-    if (tid) io.to(tid).emit('call-accepted');
-  });
-
-  socket.on('reject-call', ({ to }) => {
-    const tid = users.get(clean(to));
-    if (tid) io.to(tid).emit('call-rejected');
-  });
-
-  socket.on('offer', ({ to, sdp }) => {
-    const tid = users.get(clean(to));
-    if (tid) io.to(tid).emit('offer', { from: socket.noHp, sdp });
-  });
-
-  socket.on('answer', ({ to, sdp }) => {
-    const tid = users.get(clean(to));
-    if (tid) io.to(tid).emit('answer', { sdp });
-  });
-
-  socket.on('ice-candidate', ({ to, candidate }) => {
-    const tid = users.get(clean(to));
-    if (tid) io.to(tid).emit('ice-candidate', { candidate });
-  });
-
-  socket.on('end-call', ({ to }) => {
-    const tid = users.get(clean(to));
-    if (tid) io.to(tid).emit('call-ended');
-    // ⚠️ JANGAN hapus user di sini — biar tetap bisa dipanggil lagi
-  });
-
-  socket.on('disconnect', () => {
-    if (socket.noHp && users.get(socket.noHp) === socket.id) {
-      users.delete(socket.noHp);
-      console.log(`[BYE] ${socket.noHp} | sisa: [${[...users.keys()].join(', ')}]`);
-    }
-  });
+const e=require('express'),h=require('http'),{Server:S}=require('socket.io'),a=e(),s=h.createServer(a),io=new S(s,{cors:{origin:'*'},pingTimeout:3e4,pingInterval:1e4,transports:['websocket','polling']}),U=new Map(),cl=n=>String(n||'').replace(/\D/g,''),vd=n=>n&&n.length>=8&&n.length<=15&&/^(0|62)?8\d{7,13}$/.test(n);
+a.use(e.static('public'));
+a.get('/health',(q,r)=>r.json({ok:1,up:process.uptime()}));
+a.get('/users',(q,r)=>r.json([...U.keys()]));
+io.on('connection',t=>{
+  console.log('[+]',t.id);
+  t.on('register',r=>{const n=cl(r);console.log('[REG]',t.id,'->',n);if(!vd(n))return t.emit('register-error','Nomor tidak valid (08xxx, 8-15 digit)');const o=U.get(n);if(o&&o!==t.id)io.to(o).emit('force-logout');U.set(n,t.id);t.noHp=n;console.log(' OK:',[...U.keys()].join(','));t.emit('registered',n)});
+  const f=(ev,cb)=>t.on(ev,d=>{const i=U.get(cl(d.to));if(i)io.to(i).emit(cb,d)});
+  t.on('call-user',d=>{const tg=cl(d.to),i=U.get(tg);console.log('[CALL]',t.noHp,'->',tg);if(!i)return t.emit('call-error',`Nomor ${tg} tidak online. Online: ${[...U.keys()].join(', ')||'kosong'}`);io.to(i).emit('incoming-call',{from:t.noHp})});
+  f('accept-call','call-accepted');
+  f('reject-call','call-rejected');
+  f('end-call','call-ended');
+  t.on('offer',d=>{const i=U.get(cl(d.to));if(i)io.to(i).emit('offer',{from:t.noHp,sdp:d.sdp})});
+  t.on('answer',d=>{const i=U.get(cl(d.to));if(i)io.to(i).emit('answer',{sdp:d.sdp})});
+  t.on('ice-candidate',d=>{const i=U.get(cl(d.to));if(i)io.to(i).emit('ice-candidate',{candidate:d.candidate})});
+  t.on('unregister',()=>{if(t.noHp&&U.get(t.noHp)===t.id)U.delete(t.noHp)});
+  t.on('disconnect',r=>{if(t.noHp&&U.get(t.noHp)===t.id)U.delete(t.noHp);console.log('[-]',t.id,r,'sisa:',[...U.keys()].join(','))});
 });
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Server: http://localhost:${PORT}`));
+const P=process.env.PORT||3e3;
+s.listen(P,'0.0.0.0',()=>console.log('Server: http://localhost:'+P));

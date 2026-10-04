@@ -1,36 +1,44 @@
-<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#0a0e27"><title>Walkie Talkie</title><style>
-:root{--a:#00e5ff;--b:#ff2d95;--c:#8a2be2;--ok:#00ffa3;--bad:#ff3860;--wn:#ffb700;--tx:#e8ecff;--mu:#7d87b8;--g:rgba(255,255,255,.06);--gb:rgba(255,255,255,.14)}
+<!DOCTYPE html><html lang=id><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name=theme-color content=#0a0e27><title>Walkie Talkie</title><style>
+:root{--a:#00e5ff;--b:#ff2d95;--ok:#00ffa3;--bad:#ff3860;--wn:#ffb700;--tx:#e8ecff;--mu:#7d87b8;--g:rgba(255,255,255,.06);--gb:rgba(255,255,255,.14)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:system-ui,sans-serif;color:var(--tx);min-height:100vh;padding:18px;background:radial-gradient(ellipse at 20% 0%,rgba(138,43,226,.35),transparent 55%),radial-gradient(ellipse at 85% 10%,rgba(0,229,255,.22),transparent 50%),radial-gradient(ellipse at 50% 100%,rgba(255,45,149,.25),transparent 55%),linear-gradient(160deg,#0a0e27,#0f1a3d 55%,#1a1040);background-attachment:fixed;animation:bg 18s ease infinite alternate}
+body{font-family:system-ui,sans-serif;color:var(--tx);min-height:100vh;padding:18px;background:radial-gradient(ellipse at 20% 0,rgba(138,43,226,.35),transparent 55%),radial-gradient(ellipse at 85% 10%,rgba(0,229,255,.22),transparent 50%),radial-gradient(ellipse at 50% 100%,rgba(255,45,149,.25),transparent 55%),linear-gradient(160deg,#0a0e27,#0f1a3d 55%,#1a1040);background-attachment:fixed;animation:bg 18s ease infinite alternate}
 @keyframes bg{to{background-position:10% 5%,90% 8%,45% 95%,0 0}}
-.c{max-width:420px;margin:0 auto;padding:26px 22px 30px;background:var(--g);border:1px solid var(--gb);border-radius:26px;backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);box-shadow:0 20px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(0,229,255,.06);position:relative;overflow:hidden;animation:fi .7s cubic-bezier(.2,.9,.3,1.3)}
+.c{max-width:420px;margin:0 auto;padding:26px 22px 30px;background:var(--g);border:1px solid var(--gb);border-radius:26px;backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);box-shadow:0 20px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12);position:relative;overflow:hidden;animation:fi .7s cubic-bezier(.2,.9,.3,1.3)}
 @keyframes fi{from{opacity:0;transform:translateY(28px) scale(.96)}}
 .c::before{content:'';position:absolute;inset:-2px;border-radius:28px;padding:1px;background:linear-gradient(135deg,rgba(0,229,255,.5),rgba(255,45,149,.4),rgba(138,43,226,.5));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.55;pointer-events:none;animation:bgw 5s linear infinite}
 @keyframes bgw{50%{opacity:.9}}
-h1{text-align:center;font-size:1.4rem;font-weight:800;letter-spacing:.5px;margin-bottom:20px;background:linear-gradient(90deg,var(--a),#c8a2ff,var(--b));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 4s linear infinite;display:flex;align-items:center;justify-content:center;gap:10px}
+h1{text-align:center;font-size:1.4rem;font-weight:800;margin-bottom:16px;background:linear-gradient(90deg,var(--a),#c8a2ff,var(--b));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 4s linear infinite;display:flex;align-items:center;justify-content:center;gap:10px}
 @keyframes sh{to{background-position:200% center}}
 h1::before{content:'🎙';font-size:1.5rem;filter:drop-shadow(0 0 12px var(--a));animation:pl 2s ease-in-out infinite}
 @keyframes pl{50%{transform:scale(1.12)}}
+.bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:12px;font-size:.75rem;margin-bottom:14px;background:rgba(10,14,39,.6);border:1px solid rgba(255,255,255,.08);transition:.3s}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--bad);box-shadow:0 0 8px currentColor;animation:bl 1.5s infinite}
+.dot.on{background:var(--ok)}.dot.wn{background:var(--wn)}
+@keyframes bl{50%{opacity:.4}}
 .ig{display:flex;gap:10px;margin-bottom:12px}
-input{flex:1;padding:14px 16px;border-radius:14px;border:1px solid var(--gb);background:rgba(10,14,39,.55);color:var(--tx);font-size:1rem;outline:none;transition:.28s cubic-bezier(.2,.9,.3,1.3);backdrop-filter:blur(6px)}
+input{flex:1;padding:14px 16px;border-radius:14px;border:1px solid var(--gb);background:rgba(10,14,39,.55);color:var(--tx);font-size:1rem;outline:none;transition:.28s cubic-bezier(.2,.9,.3,1.3);backdrop-filter:blur(6px);min-width:0}
 input::placeholder{color:var(--mu)}
 input:focus{border-color:var(--a);background:rgba(10,14,39,.8);box-shadow:0 0 0 3px rgba(0,229,255,.18),0 0 24px rgba(0,229,255,.35);transform:translateY(-1px)}
-button{padding:14px 18px;border:none;border-radius:14px;font-size:.95rem;font-weight:700;cursor:pointer;color:#fff;transition:.22s cubic-bezier(.2,.9,.3,1.3);letter-spacing:.3px;position:relative;overflow:hidden;touch-action:manipulation;user-select:none}
+input:disabled{opacity:.5}
+button{padding:14px 18px;border:none;border-radius:14px;font-size:.95rem;font-weight:700;cursor:pointer;color:#fff;transition:.22s cubic-bezier(.2,.9,.3,1.3);letter-spacing:.3px;position:relative;overflow:hidden;touch-action:manipulation;user-select:none;flex-shrink:0}
+button:disabled{opacity:.5;cursor:not-allowed}
 button::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-120%);transition:transform .55s}
-button:active::after{transform:translateX(120%)}
-button:active{transform:scale(.96)}
+button:not(:disabled):active::after{transform:translateX(120%)}
+button:not(:disabled):active{transform:scale(.96)}
 .p{background:linear-gradient(135deg,#3b1e8a,#0f3460);box-shadow:0 6px 22px rgba(59,30,138,.55),inset 0 1px 0 rgba(255,255,255,.15)}
 .s{background:linear-gradient(135deg,#00c98a,#00ffa3);color:#032018;box-shadow:0 6px 22px rgba(0,255,163,.35),inset 0 1px 0 rgba(255,255,255,.35)}
 .d{background:linear-gradient(135deg,#d81b47,#ff3860);box-shadow:0 6px 22px rgba(255,56,96,.4),inset 0 1px 0 rgba(255,255,255,.2)}
 .w{background:linear-gradient(135deg,#e08a00,#ffb700);color:#241800;box-shadow:0 6px 22px rgba(255,183,0,.35),inset 0 1px 0 rgba(255,255,255,.3)}
-.st{text-align:center;padding:11px 14px;border-radius:13px;background:rgba(10,14,39,.55);border:1px solid rgba(255,255,255,.06);font-size:.83rem;color:var(--mu);word-break:break-all;margin:8px 0;backdrop-filter:blur(6px);transition:.3s}
-#ms{color:var(--a);font-weight:600;letter-spacing:.3px;box-shadow:inset 0 0 20px rgba(0,229,255,.06)}
+.st{text-align:center;padding:11px 14px;border-radius:13px;background:rgba(10,14,39,.55);border:1px solid rgba(255,255,255,.06);font-size:.83rem;color:var(--mu);word-break:break-word;margin:8px 0;backdrop-filter:blur(6px)}
+.st.err{color:#ff8fa3;background:rgba(255,56,96,.12);border-color:rgba(255,56,96,.35)}
+.st.ok{color:var(--ok);background:rgba(0,255,163,.08);border-color:rgba(0,255,163,.25)}
+#ms{color:var(--a);font-weight:600;box-shadow:inset 0 0 20px rgba(0,229,255,.06)}
 #ol{font-size:.78rem}
 .ptt{width:100%;padding:30px;font-size:1.15rem;font-weight:800;letter-spacing:1px;border-radius:60px;margin-top:16px;color:#fff;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.28),transparent 55%),linear-gradient(135deg,#e91e63,#ff2d95,#8a2be2);box-shadow:0 14px 40px rgba(255,45,149,.5),inset 0 2px 0 rgba(255,255,255,.28),inset 0 -6px 16px rgba(0,0,0,.35);user-select:none;touch-action:none;animation:br 3.2s ease-in-out infinite}
 @keyframes br{50%{box-shadow:0 18px 55px rgba(255,45,149,.75),inset 0 2px 0 rgba(255,255,255,.4),inset 0 -6px 16px rgba(0,0,0,.35)}}
 .ptt.on{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.4),transparent 55%),linear-gradient(135deg,#00c98a,#00ffa3,#00e5ff);color:#032018;animation:tp .6s ease-in-out infinite}
 @keyframes tp{50%{transform:scale(1.03);box-shadow:0 0 0 16px rgba(0,255,163,0),0 14px 40px rgba(0,255,163,.7)}}
-.nf{background:radial-gradient(circle at 50% 0%,rgba(255,183,0,.3),transparent 60%),linear-gradient(135deg,rgba(255,183,0,.22),rgba(255,45,149,.18));border:1px solid rgba(255,183,0,.5);border-radius:18px;padding:18px;margin:14px 0;text-align:center;display:none;backdrop-filter:blur(14px);box-shadow:0 12px 40px rgba(255,183,0,.28),inset 0 1px 0 rgba(255,255,255,.2);animation:ni .45s cubic-bezier(.2,.9,.3,1.4)}
+.nf{background:radial-gradient(circle at 50% 0,rgba(255,183,0,.3),transparent 60%),linear-gradient(135deg,rgba(255,183,0,.22),rgba(255,45,149,.18));border:1px solid rgba(255,183,0,.5);border-radius:18px;padding:18px;margin:14px 0;text-align:center;display:none;backdrop-filter:blur(14px);box-shadow:0 12px 40px rgba(255,183,0,.28),inset 0 1px 0 rgba(255,255,255,.2);animation:ni .45s cubic-bezier(.2,.9,.3,1.4)}
 .nf.on{display:block}
 @keyframes ni{from{opacity:0;transform:translateY(-14px) scale(.94)}}
 .nf p{margin-bottom:12px;font-size:1rem;color:#fff}
@@ -39,66 +47,80 @@ button:active{transform:scale(.96)}
 .h{display:none!important}
 .vw{height:16px;background:rgba(10,14,39,.7);border-radius:10px;overflow:hidden;margin:12px 0 6px;border:1px solid rgba(255,255,255,.06);box-shadow:inset 0 2px 8px rgba(0,0,0,.5);position:relative}
 .vw::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 6px,rgba(0,0,0,.35) 6px 7px);pointer-events:none;z-index:2}
-.vu{height:100%;width:0;border-radius:10px;background:linear-gradient(90deg,var(--ok),var(--a) 35%,var(--wn) 70%,var(--bad));box-shadow:0 0 18px rgba(0,229,255,.7);transition:width .07s linear;position:relative}
+.vu{height:100%;width:0;border-radius:10px;background:linear-gradient(90deg,var(--ok),var(--a) 35%,var(--wn) 70%,var(--bad));box-shadow:0 0 18px rgba(0,229,255,.7);transition:width .07s linear}
 #ah{font-size:.72rem;padding:6px;margin:0 0 4px;background:transparent;border:none;color:var(--mu);letter-spacing:.4px}
 .r{display:flex;gap:10px;margin-top:12px}
 .r button{flex:1}
 #ra{display:none}
+.ts{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:linear-gradient(135deg,#1a1f3a,#0f1a3d);border:1px solid var(--gb);padding:14px 20px;border-radius:14px;font-size:.9rem;z-index:999;box-shadow:0 12px 40px rgba(0,0,0,.6);backdrop-filter:blur(14px);transition:.4s cubic-bezier(.2,.9,.3,1.4);max-width:90vw;text-align:center;pointer-events:none}
+.ts.on{transform:translateX(-50%) translateY(0)}
+.ts.err{border-color:rgba(255,56,96,.5);background:linear-gradient(135deg,rgba(255,56,96,.2),rgba(60,10,20,.9));color:#ffb3c0}
+.ts.ok{border-color:rgba(0,255,163,.5);background:linear-gradient(135deg,rgba(0,255,163,.15),rgba(10,40,30,.9));color:var(--ok)}
 @keyframes rip{to{transform:scale(4);opacity:0}}
 </style></head><body>
-<div class="c">
+<div class=ts id=ts></div>
+<div class=c>
 <h1>Walkie Talkie</h1>
-<div id="rs"><div class="ig"><input type="tel" id="mn" placeholder="Nomor HP (08...)" inputmode="numeric" autocomplete="off"><button class="p" onclick="R()">Daftar</button></div></div>
-<div id="cs" class="h">
-<div class="st" id="ms">-</div>
-<div class="st" id="ol">Online: -</div>
-<div class="ig"><input type="tel" id="tn" placeholder="Nomor tujuan (08...)" inputmode="numeric" autocomplete="off"><button class="s" onclick="C()">Panggil</button></div>
-<div class="vw"><div class="vu" id="vu"></div></div>
-<div class="st" id="ah">🎧 Level suara masuk</div>
-<button class="ptt" id="pb" onmousedown="T(event,1)" onmouseup="T(event,0)" onmouseleave="T(event,0)" ontouchstart="T(event,1)" ontouchend="T(event,0)" ontouchcancel="T(event,0)">TAHAN UNTUK BICARA</button>
-<div class="r"><button class="d" onclick="E()">Akhiri</button><button class="w" onclick="U(1)">🔊 Suara</button></div>
-<div class="r"><button class="p" onclick="L()">Ganti Nomor / Keluar</button></div>
+<div class=bar><span class=dot id=dot></span><span id=nt>Menghubungkan...</span></div>
+<div id=rs><div class=ig><input type=tel id=mn placeholder="Nomor HP (08...)" inputmode=numeric autocomplete=off maxlength=15><button class=p id=rb onclick=R() disabled>Daftar</button></div></div>
+<div id=cs class=h>
+<div class=st id=ms>-</div>
+<div class=st id=ol>Online: -</div>
+<div class=ig><input type=tel id=tn placeholder="Nomor tujuan" inputmode=numeric autocomplete=off maxlength=15><button class=s id=cb onclick=C()>Panggil</button></div>
+<div class=vw><div class=vu id=vu></div></div>
+<div class=st id=ah>🎧 Level suara masuk</div>
+<button class=ptt id=pb onmousedown="T(event,1)" onmouseup="T(event,0)" onmouseleave="T(event,0)" ontouchstart="T(event,1)" ontouchend="T(event,0)" ontouchcancel="T(event,0)">TAHAN UNTUK BICARA</button>
+<div class=r><button class=d onclick=E()>Akhiri</button><button class=w onclick=U(1)>🔊 Suara</button></div>
+<div class=r><button class=p onclick=L()>Ganti Nomor / Keluar</button></div>
 </div>
-<div class="nf" id="nf"><p>📞 <b id="ci"></b> ingin menyambungkan</p><button class="s" onclick="A()">Ya</button><button class="d" onclick="X()">Tidak</button></div>
+<div class=nf id=nf><p>📞 <b id=ci></b> ingin menyambungkan</p><button class=s onclick=A()>Ya</button><button class=d onclick=X()>Tidak</button></div>
 </div>
-<audio id="ra" autoplay playsinline></audio>
-<script src="/socket.io/socket.io.js"></script><script>
+<audio id=ra autoplay playsinline></audio>
+<script src=https://cdn.socket.io/4.8.1/socket.io.min.js></script>
+<script>
 'use strict';
+/* KONFIG: isi URL Cloudflare Tunnel backend. Kosong = same-origin */
+const BU='https://walkie-talkie.adeanantafahmi.workers.dev';
 const $=i=>document.getElementById(i),cl=n=>String(n||'').replace(/\D/g,''),lg=(...a)=>console.log('[WT]',...a);
-const io_=io({reconnection:true,transports:['websocket','polling']});
-let my=localStorage.getItem('myNo')||'',tg='',caller=0,pc=null,ls=null,rst=null,pend=[],rds=0,mo=0,ac=null,an=null,raf=null;
+let tt=null;const ts=(m,t='')=>{const e=$('ts');e.textContent=m;e.className='ts on '+t;clearTimeout(tt);tt=setTimeout(()=>e.className='ts '+t,3200)};
+const io_=BU?io(BU,{reconnection:1,reconnectionDelay:1e3,reconnectionDelayMax:5e3,timeout:15e3,transports:['websocket','polling']}):io({reconnection:1,reconnectionDelay:1e3,reconnectionDelayMax:5e3,timeout:15e3,transports:['websocket','polling']});
+let my=localStorage.getItem('myNo')||'',tg='',caller=0,pc=null,ls=null,rst=null,pend=[],rds=0,mo=0,ac=null,an=null,raf=null,rp=0,rt=null;
 const ra=$('ra');ra.volume=1;
-document.addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b)return;const r=b.getBoundingClientRect(),s=Math.max(r.width,r.height),d=document.createElement('span');d.style.cssText=`position:absolute;border-radius:50%;pointer-events:none;width:${s}px;height:${s}px;left:${e.clientX-r.left-s/2}px;top:${e.clientY-r.top-s/2}px;background:radial-gradient(circle,rgba(255,255,255,.55),transparent 70%);transform:scale(0);opacity:.9;animation:rip .6s ease-out`;b.appendChild(d);setTimeout(()=>d.remove(),620)});
-function U(alert_){if(!ac){const C=window.AudioContext||window.webkitAudioContext;if(C)ac=new C()}if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});ra.muted=0;ra.play().then(()=>{if(alert_)$('ah').textContent='🔊 Audio aktif'}).catch(e=>{lg('play',e);if(alert_)$('ah').textContent='⚠️ Tap lagi'})}
+const net=(s,t)=>{$('dot').className='dot'+(s==='ok'?' on':(s==='w'?' wn':''));$('nt').textContent=t;$('rb').disabled=s!=='ok';$('cb').disabled=s!=='ok'};
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const r=b.getBoundingClientRect(),s=Math.max(r.width,r.height),d=document.createElement('span');d.style.cssText=`position:absolute;border-radius:50%;pointer-events:none;width:${s}px;height:${s}px;left:${e.clientX-r.left-s/2}px;top:${e.clientY-r.top-s/2}px;background:radial-gradient(circle,rgba(255,255,255,.55),transparent 70%);transform:scale(0);opacity:.9;animation:rip .6s ease-out`;b.appendChild(d);setTimeout(()=>d.remove(),620)});
+function U(a){if(!ac){const C=window.AudioContext||window.webkitAudioContext;if(C)ac=new C}if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});ra.muted=0;ra.play().then(()=>{if(a)$('ah').textContent='🔊 Audio aktif'}).catch(e=>{lg('play',e);if(a)$('ah').textContent='⚠️ Tap lagi'})}
 document.addEventListener('touchstart',()=>U(0),{once:1,passive:1});document.addEventListener('click',()=>U(0),{once:1});
-async function gm(){if(ls)return ls;ls=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:1,noiseSuppression:1,autoGainControl:1,channelCount:1},video:0});ls.getAudioTracks().forEach(t=>t.enabled=0);lg('mic OK');return ls}
+async function gm(){if(ls)return ls;if(!navigator.mediaDevices)throw Error('Browser tidak dukung mic');ls=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:1,noiseSuppression:1,autoGainControl:1,channelCount:1},video:0});ls.getAudioTracks().forEach(t=>t.enabled=0);lg('mic OK');return ls}
 function cp(){if(pc)return pc;pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}],iceCandidatePoolSize:4,bundlePolicy:'max-bundle'});
 ls.getTracks().forEach(t=>pc.addTrack(t,ls));
 pc.ontrack=e=>{lg('ontrack',e.track.kind);if(e.streams&&e.streams[0])rst=e.streams[0];else{if(!rst)rst=new MediaStream();rst.addTrack(e.track)}ra.srcObject=rst;ra.play().then(()=>$('ah').textContent='🎧 Terhubung — mendengarkan').catch(()=>$('ah').textContent='⚠️ Tap layar');mt(rst)};
 pc.onicecandidate=e=>{if(e.candidate)io_.emit('ice-candidate',{to:tg,candidate:e.candidate})};
-pc.onconnectionstatechange=()=>{lg('conn:',pc.connectionState);if(pc.connectionState==='connected'){$('ms').textContent='✅ Tersambung dengan '+tg;U(0)}else if(pc.connectionState==='failed'){$('ms').textContent='❌ Koneksi gagal';try{pc.restartIce()}catch(_){}}else if(pc.connectionState==='disconnected')$('ms').textContent='⚠️ Terputus sementara'};
-pc.oniceconnectionstatechange=()=>lg('ice:',pc.iceConnectionState);
-pc.onnegotiationneeded=async()=>{if(!caller)return;try{mo=1;await pc.setLocalDescription();io_.emit('offer',{to:tg,sdp:pc.localDescription})}catch(e){lg('neg',e)}finally{mo=0}};
-return pc}
+pc.onconnectionstatechange=()=>{lg('conn',pc.connectionState);if(pc.connectionState==='connected'){$('ms').textContent='✅ Tersambung dengan '+tg;$('ms').className='st ok';U(0)}else if(pc.connectionState==='failed'){$('ms').textContent='❌ Koneksi gagal';try{pc.restartIce()}catch(_){}}else if(pc.connectionState==='disconnected')$('ms').textContent='⚠️ Terputus sementara'};
+pc.oniceconnectionstatechange=()=>lg('ice',pc.iceConnectionState);
+pc.onnegotiationneeded=async()=>{if(!caller)return;try{mo=1;await pc.setLocalDescription();io_.emit('offer',{to:tg,sdp:pc.localDescription})}catch(e){lg('neg',e)}finally{mo=0}};return pc}
 async function fc(){if(!pc||!rds)return;while(pend.length){const c=pend.shift();try{await pc.addIceCandidate(c)}catch(e){lg('addICE',e)}}}
 function mt(s){if(!ac)return;if(!an){an=ac.createAnalyser();an.fftSize=512}try{ac.createMediaStreamSource(s).connect(an)}catch(e){lg('mt',e);return}const d=new Uint8Array(an.frequencyBinCount);cancelAnimationFrame(raf);const tk=()=>{an.getByteFrequencyData(d);let x=0;for(let i=0;i<d.length;i++)x+=d[i];$('vu').style.width=Math.min(100,x/d.length*2.5)+'%';raf=requestAnimationFrame(tk)};tk()}
-io_.on('connect',()=>{lg('conn',io_.id);if(my)io_.emit('register',my)});
-io_.on('registered',n=>{my=n;localStorage.setItem('myNo',n);$('rs').classList.add('h');$('cs').classList.remove('h');$('ms').textContent='Nomor Anda: '+n});
-io_.on('register-error',m=>alert(m));
-io_.on('force-logout',()=>{alert('Nomor dipakai di perangkat lain');L()});
-function R(){const n=cl($('mn').value);if(n.length<8)return alert('Nomor tidak valid');my=n;localStorage.setItem('myNo',n);io_.emit('register',n)}
-function L(){try{E()}catch(_){}localStorage.removeItem('myNo');location.reload()}
-function C(){U(0);tg=cl($('tn').value);if(tg.length<8)return alert('Nomor tujuan tidak valid');if(tg===my)return alert('Tidak bisa panggil diri sendiri');caller=1;io_.emit('call-user',{to:tg});$('ms').textContent='📡 Memanggil '+tg+'...'}
-async function A(){U(0);$('nf').classList.remove('on');tg=$('ci').textContent;caller=0;$('ms').textContent='Menyiapkan...';try{await gm();cp();io_.emit('accept-call',{to:tg});$('ms').textContent='Menunggu offer...'}catch(e){alert('Gagal akses mikrofon: '+e.message)}}
+io_.on('connect',()=>{lg('conn',io_.id);net('ok','✅ Terhubung ke server');if(my){rp=1;io_.emit('register',my);clearTimeout(rt);rt=setTimeout(()=>{if(rp){ts('Server tidak merespons','err');rp=0}},8e3)}});
+io_.on('disconnect',r=>{lg('disc',r);net('w','⚠️ Terputus: '+r);if(r!=='io client disconnect')ts('Koneksi terputus, mencoba...','err')});
+io_.on('connect_error',e=>{lg('cerr',e);net('','❌ Gagal konek backend');ts(e.message?.includes('xhr')?'Backend URL salah/belum di-set':'Error: '+e.message,'err')});
+io_.on('reconnect_attempt',n=>net('w',`🔄 Reconnect (${n})...`));
+io_.on('reconnect_failed',()=>net('','❌ Gagal reconnect — refresh'));
+io_.on('registered',n=>{rp=0;clearTimeout(rt);my=n;localStorage.setItem('myNo',n);$('rs').classList.add('h');$('cs').classList.remove('h');$('ms').textContent='Nomor Anda: '+n;$('ms').className='st ok';$('rb').textContent='Daftar';$('rb').disabled=0;$('mn').disabled=0;ts('✅ Terdaftar: '+n,'ok')});
+io_.on('register-error',m=>{rp=0;clearTimeout(rt);$('rb').textContent='Daftar';$('rb').disabled=0;$('mn').disabled=0;ts('❌ '+m,'err')});
+io_.on('force-logout',()=>{ts('Nomor dipakai di device lain','err');setTimeout(L,1500)});
+function R(){const n=cl($('mn').value);lg('reg',n);if(!n)return ts('Masukkan nomor dulu','err');if(n.length<8)return ts('Nomor kurang dari 8 digit','err');if(n.length>15)return ts('Nomor terlalu panjang','err');if(!/^(0|62)?8\d{7,13}$/.test(n))return ts('Format harus 08xxx','err');if(!io_.connected)return ts('Belum konek server','err');my=n;localStorage.setItem('myNo',n);rp=1;io_.emit('register',n);$('rb').textContent='...';$('rb').disabled=1;$('mn').disabled=1;clearTimeout(rt);rt=setTimeout(()=>{if(rp){ts('Timeout: server tidak merespons','err');rp=0;$('rb').textContent='Daftar';$('rb').disabled=0;$('mn').disabled=0}},8e3)}
+function L(){try{io_.connected&&io_.emit('unregister');E()}catch(_){}localStorage.removeItem('myNo');setTimeout(()=>location.reload(),200)}
+function C(){U(0);tg=cl($('tn').value);if(!tg)return ts('Masukkan nomor tujuan','err');if(tg===my)return ts('Tidak bisa panggil diri sendiri','err');if(!io_.connected)return ts('Belum konek server','err');caller=1;io_.emit('call-user',{to:tg});$('ms').textContent='📡 Memanggil '+tg+'...';$('ms').className='st'}
+async function A(){U(0);$('nf').classList.remove('on');tg=$('ci').textContent;caller=0;$('ms').textContent='Menyiapkan...';try{await gm();cp();io_.emit('accept-call',{to:tg});$('ms').textContent='Menunggu offer...'}catch(e){ts('Gagal mic: '+e.message,'err');lg('acc',e)}}
 function X(){$('nf').classList.remove('on');io_.emit('reject-call',{to:$('ci').textContent})}
-function E(){if(tg)io_.emit('end-call',{to:tg});cl_();$('ms').textContent='Panggilan berakhir'}
-function cl_(){try{if(pc)pc.close()}catch(_){}pc=null;try{if(ls)ls.getTracks().forEach(t=>t.stop())}catch(_){}ls=null;rst=null;ra.srcObject=null;pend=[];rds=0;cancelAnimationFrame(raf);$('vu').style.width='0';T(null,0)}
-io_.on('incoming-call',({from})=>{U(0);$('ci').textContent=from;$('nf').classList.add('on');if(navigator.vibrate)navigator.vibrate([200,100,200])});
-io_.on('call-accepted',async()=>{try{await gm();cp();$('ms').textContent='Menyambungkan...';mo=1;await pc.setLocalDescription();io_.emit('offer',{to:tg,sdp:pc.localDescription});mo=0}catch(e){lg('cstart',e);alert('Gagal: '+e.message)}});
+function E(){if(tg&&io_.connected)io_.emit('end-call',{to:tg});cl_();$('ms').textContent='Panggilan berakhir';$('ms').className='st'}
+function cl_(){try{pc&&pc.close()}catch(_){}pc=null;try{ls&&ls.getTracks().forEach(t=>t.stop())}catch(_){}ls=null;rst=null;ra.srcObject=null;pend=[];rds=0;cancelAnimationFrame(raf);$('vu').style.width='0';T(null,0)}
+io_.on('incoming-call',({from})=>{U(0);$('ci').textContent=from;$('nf').classList.add('on');navigator.vibrate&&navigator.vibrate([200,100,200])});
+io_.on('call-accepted',async()=>{try{await gm();cp();$('ms').textContent='Menyambungkan...';mo=1;await pc.setLocalDescription();io_.emit('offer',{to:tg,sdp:pc.localDescription});mo=0}catch(e){lg('cstart',e);ts('Gagal: '+e.message,'err')}});
 io_.on('call-rejected',()=>{$('ms').textContent='Panggilan ditolak';cl_()});
 io_.on('call-ended',()=>{$('ms').textContent='Panggilan berakhir';cl_()});
-io_.on('call-error',m=>alert(m));
-io_.on('offer',async({from,sdp})=>{try{if(!pc){await gm();cp()}const d=new RTCSessionDescription(sdp),col=mo||pc.signalingState!=='stable';if(col&&!caller)return;await pc.setRemoteDescription(d);rds=1;await fc();const a=await pc.createAnswer();await pc.setLocalDescription(a);io_.emit('answer',{to:from||tg,sdp:pc.localDescription});$('ms').textContent='Terhubung dengan '+(from||tg)}catch(e){lg('off',e)}});
+io_.on('call-error',m=>{ts(m,'err');$('ms').textContent=m;$('ms').className='st err'});
+io_.on('offer',async({from,sdp})=>{try{if(!pc){await gm();cp()}const col=mo||pc.signalingState!=='stable';if(col&&!caller)return;await pc.setRemoteDescription(new RTCSessionDescription(sdp));rds=1;await fc();const a=await pc.createAnswer();await pc.setLocalDescription(a);io_.emit('answer',{to:from||tg,sdp:pc.localDescription});$('ms').textContent='Terhubung dengan '+(from||tg)}catch(e){lg('off',e)}});
 io_.on('answer',async({sdp})=>{try{if(!pc)return;await pc.setRemoteDescription(new RTCSessionDescription(sdp));rds=1;await fc();$('ms').textContent='Terhubung dengan '+tg}catch(e){lg('ans',e)}});
 io_.on('ice-candidate',async({candidate})=>{if(!pc)return;const c=new RTCIceCandidate(candidate);if(!rds){pend.push(c);return}try{await pc.addIceCandidate(c)}catch(e){lg('ice',e)}});
 function T(e,on){if(e)e.preventDefault();U(0);if(!ls){lg('PTT: mic belum siap');return}ls.getAudioTracks().forEach(t=>t.enabled=!!on);$('pb').classList.toggle('on',!!on);$('pb').textContent=on?'🔴 BICARA...':'TAHAN UNTUK BICARA';if(on&&navigator.vibrate)navigator.vibrate(35)}
