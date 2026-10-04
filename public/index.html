@@ -176,7 +176,7 @@ function cp(){
     if(e.streams&&e.streams[0])rs=e.streams[0];else{if(!rs)rs=new MediaStream();rs.addTrack(e.track)}
     ra.srcObject=rs;try{ra.muted=true}catch(_){};initRxChain(rs);
     const p=()=>ra.play().catch(()=>{try{ra.muted=true;ra.play().then(()=>ra.muted=false)}catch(_){}});
-    p();setTimeout(p,300);setTimeout(p,1000);
+    p();
     mt(rs);
     e.track.onunmute=()=>lg('📥 UNMUTED');
     e.track.onmute=()=>lg('📥 MUTED');
@@ -272,7 +272,11 @@ async function A(){
 }
 async function oa(m){try{if(!pc)return;await pc.setRemoteDescription(new RTCSessionDescription(m.sdp));rds=1;await fc();[0,300,1000].forEach(t=>setTimeout(ll,t))}catch(e){lg('ans',e)}}
 async function oi(m){if(!pc)return;const c=new RTCIceCandidate(m.candidate);if(!rds){pend.push(c);return}try{await pc.addIceCandidate(c)}catch(e){}}
-function U(a){ra.muted=false;ra.volume=(echoGate===1&&document.getElementById('pb').classList.contains('on'))?0:1;ra.play().then(()=>{if(a)ts('🔊 audio','k')}).catch(()=>{if(a)ts('tap lagi','e')});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
+function U(a){
+  if(rxChain){if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});setRxLevel(1,.2);if(a)ts('🔊 audio','k');return}
+  ra.muted=false;ra.volume=1;ra.play().then(()=>{if(a)ts('🔊 audio','k')}).catch(()=>{if(a)ts('tap lagi','e')});
+  if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
+}).catch(()=>{if(a)ts('tap lagi','e')});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
 function R(){
   const n=cl($('mn').value);
   if(!n)return ts('masukkan nomor','e');
