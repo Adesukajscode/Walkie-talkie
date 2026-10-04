@@ -367,6 +367,105 @@ function feedbackCheck(){
   }catch(e){}
 }
 setInterval(feedbackCheck,250);
+let ngProc=null,ngOn=0,ngSrc=null,ngHp=null,ngBp=null,ngGate=null,ngAn=null,ngData=null,ngRaf=null,ngEnv=0,ngNoiseFloor=8,ngSamples=[];
+function buildNgBtn(){
+  if(document.getElementById('ngbtn'))return;
+  const b=document.createElement('button');
+  b.id='ngbtn';b.textContent='▤';b.title='Noise Gate';
+  b.style.cssText='position:fixed;bottom:20px;right:88px;width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#2a2a35,#15151c);border:2px solid #2a2a35;color:#888;font-size:1.4rem;font-family:inherit;cursor:pointer;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);transition:.2s;display:flex;align-items:center;justify-content:center;padding:0';
+  b.onclick=toggleNg;
+  document.body.appendChild(b);
+  lg('🔇 Tombol Noise Gate di-inject');
+}
+function toggleNg(){
+  ngOn=!ngOn;
+  const b=document.getElementById('ngbtn');
+  if(b){
+    b.style.borderColor=ngOn?'#ffb300':'#2a2a35';
+    b.style.color=ngOn?'#ffb300':'#888';
+    b.style.boxShadow=ngOn?'0 0 20px #ffb300':'0 4px 12px rgba(0,0,0,.5)';
+    b.textContent=ngOn?'▣':'▤';
+  }
+  ts(ngOn?'🔇 Noise Gate ON':'🔇 Noise Gate OFF',ngOn?'k':'');
+  lg('NoiseGate',ngOn?'ON':'OFF');
+  if(ngOn)startNg();else stopNg();
+}
+function startNg(){
+  if(ngProc||!ls||!ls.getAudioTracks().length)return;
+  try{
+    if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'})}catch{return}}
+    if(ac.state==='suspended')ac.resume().catch(()=>{});
+    const src=ac.createMediaStreamSource(ls);
+    // High-pass: buang rumble < 200Hz (kipas, AC, angin)
+    const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=200;hp.Q.value=.7;
+    // Band-pass: fokus ke frekuensi vokal 300-3400Hz
+    const bp=ac.createBiquadFilter();bp.type='peaking';bp.frequency.value=1800;bp.Q.value=1.2;bp.gain.value=6;
+    // Notch buang hum 50/60Hz
+    const nt1=ac.createBiquadFilter();nt1.type='notch';nt1.frequency.value=50;nt1.Q.value=10;
+    const nt2=ac.createBiquadFilter();nt2.type='notch';nt2.frequency.value=60;nt2.Q.value=10;
+    // Noise gate: gain node yang diatur dinamis
+    const gate=ac.createGain();gate.gain.value=0;
+    // Analyser untuk deteksi voice
+    const an=ac.createAnalyser();an.fftSize=512;an.smoothingTimeConstant=.6;
+    // Output ke speaker (kembali ke aliran normal)
+    const dest=ac.createMediaStreamDestination();
+    src.connect(nt1).connect(nt2).connect(hp).connect(bp).connect(gate).connect(dest);
+    gate.connect(an);
+    // Replace mic track dengan processed stream
+    const proc=dest.stream.getAudioTracks()[0];
+    if(proc){
+      proc.enabled=false;
+      // Ganti sender track kalau pc ada
+      if(pc){
+        const snd=pc.getSenders().find(x=>x.track&&x.track.kind==='audio');
+        if(snd)snd.replaceTrack(proc).then(()=>lg('🔇 Track mic diganti processed')).catch(e=>lg('replaceTrack err',e.message));
+      }
+      ngProc=proc;
+    }
+    ngSrc=src;ngHp=hp;ngBp=bp;ngGate=gate;ngAn=an;
+    ngData=new Uint8Array(an.frequencyBinCount);
+    ngSamples=[];ngNoiseFloor=8;ngEnv=0;
+    const loop=()=>{
+      if(!ngOn||!ngData){ngRaf=null;return}
+      an.getByteFrequencyData(ngData);
+      // Hitung RMS dalam rentang vokal (200-3400Hz)
+      const sr=ac.sampleRate,n=an.fftSize;
+      const bLow=Math.max(1,Math.floor(200*n/sr)),bHigh=Math.min(ngData.length-1,Math.floor(3400*n/sr));
+      let sum=0,cnt=0;
+      for(let i=bLow;i<=bHigh;i++){sum+=ngData[i]*ngData[i];cnt++}
+      const rms=Math.sqrt(sum/cnt);
+      // Adaptive noise floor: saat suara pelan, update baseline
+      if(rms<ngNoiseFloor*1.5){ngNoiseFloor=ngNoiseFloor*.98+rms*.02;if(ngNoiseFloor<3)ngNoiseFloor=3;if(ngNoiseFloor>25)ngNoiseFloor=25}
+      // Threshold: noise floor + margin
+      const open=ngNoiseFloor+10,close=ngNoiseFloor+4;
+      // Envelope follower (attack cepat, release lambat) → audio tidak choppy
+      const target=rms>open?1:(rms<close?0:ngEnv);
+      // Attack 3ms, release 120ms
+      const rate=target>ngEnv?.35:.06;
+      ngEnv=ngEnv+(target-ngEnv)*rate;
+      try{gate.gain.setTargetAtTime(ngEnv,ac.currentTime,.02)}catch(_){}
+      ngRaf=requestAnimationFrame(loop);
+    };
+    loop();
+    lg('🔇 Noise Gate aktif | noise floor adaptif');
+  }catch(e){lg('startNg err',e.message)}
+}
+function stopNg(){
+  ngOn=0;
+  if(ngRaf){cancelAnimationFrame(ngRaf);ngRaf=null}
+  // Kembalikan track mic asli ke sender
+  if(pc&&ls&&ls.getAudioTracks().length){
+    const orig=ls.getAudioTracks()[0];
+    if(orig){orig.enabled=false;
+      const snd=pc.getSenders().find(x=>x.track&&x.track.kind==='audio');
+      if(snd)snd.replaceTrack(orig).then(()=>lg('🔇 Track mic asli dipulihkan')).catch(()=>{});
+    }
+  }
+  try{ngSrc&&ngSrc.disconnect();ngGate&&ngGate.disconnect();ngHp&&ngHp.disconnect();ngBp&&ngBp.disconnect()}catch(_){}
+  ngProc=null;ngSrc=null;ngGate=null;ngAn=null;ngData=null;
+  lg('🔇 Noise Gate off');
+}
+// Auto-restore noise gate saat track mic dibuat ulang
 function buildAnt(){
   const a=document.querySelector('.ant');if(!a||a.dataset.built)return;
   a.dataset.built='1';
@@ -519,4 +618,4 @@ window.addEventListener('offline',uo);uo();
   setTimeout(go,300);
   setTimeout(go,1200);
 })();
-</script></body></html>
+(function initNgBtn(){function go(){try{buildNgBtn()}catch(e){}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go,{once:true});else go();setTimeout(go,400);setTimeout(go,1500)})();</script></body></html>
