@@ -428,20 +428,17 @@ function onIce(m){
 /* ============== PTT ============== */
 function ST(e){
   if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
-  if(!ls)return ts('mic belum siap','e');
-  /* 1) MUTE MIC SEMUA dulu — cegah kirim suara speaker */
-  ls.getAudioTracks().forEach(function(t){t.enabled=false});
-  /* 2) MUTE SPEAKER HP SENDIRI (via volume + track) */
-  ra.volume=0;
-  if(rTrack)rTrack.enabled=false;
-  /* 3) BARU aktifkan track mic yang benar */
-  var t=activeTx||ls.getAudioTracks()[0];
-  if(t)t.enabled=true;
-  $('pb').classList.add('on');
-  $('led').classList.add('tx');
-  $('led').classList.remove('rx');
-  if(navigator.vibrate)navigator.vibrate(15);
-  lg('PTT ON','txEnabled:',t&&t.enabled,'rTrack:',rTrack&&rTrack.enabled);
+  try{
+    if(!ls||!ls.getAudioTracks)return ts('mic belum siap','e');
+    ls.getAudioTracks().forEach(function(t){try{t.enabled=false}catch(_){}});
+    var t=activeTx||ls.getAudioTracks()[0];
+    if(t)try{t.enabled=true}catch(_){}
+    try{ra.volume=0}catch(_){}
+    var pb=$('pb');if(pb)pb.classList.add('on');
+    var led=$('led');if(led){led.classList.add('tx');led.classList.remove('rx')}
+    if(navigator.vibrate)try{navigator.vibrate(15)}catch(_){}
+    lg('PTT ON vol=0');
+  }catch(err){lg('ST err',err.message)}
 }
 function SP(e){
   if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
