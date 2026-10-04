@@ -78,22 +78,30 @@ fetch('/prewarm').catch(()=>{});
 
 // ═══════ FIX #1: Promise-guarded gm() → cegah double getUserMedia ═══════
 let lsProm=null;
-function gm(){
-  if(ls)return Promise.resolve(ls);
+async function gm(){
+  if(ls)return ls;
   if(lsProm)return lsProm;
   lsProm=(async()=>{
     if(!navigator.mediaDevices)throw Error('Browser tidak dukung mic');
     lg('🎤 getUserMedia...');
-    const s=await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1,sampleRate:48000},
-      video:false
-    });
-    ls=s;
-    s.getAudioTracks().forEach(x=>x.enabled=false);
-    const t=s.getAudioTracks()[0];
-    const st=t.getSettings();
-    lg('🎤 MIC OK label=',t.label,'enabled=',t.enabled,'EC=',st.echoCancellation,'NS=',st.noiseSuppression);
-    return s;
+    const tried=[
+      {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1,sampleRate:48000},video:false},
+      {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false},
+      {audio:{echoCancellation:true},video:false},
+      {audio:true,video:false}
+    ];
+    let st,lastErr;
+    for(const c of tried){
+      try{st=await navigator.mediaDevices.getUserMedia(c);lg('✅ getUserMedia OK:',JSON.stringify(c.audio));break}
+      catch(e){lastErr=e;lg('⚠️ constraint gagal:',e.name,e.message)}
+    }
+    if(!st)throw lastErr||Error('Semua constraint mic gagal');
+    ls=st;
+    st.getAudioTracks().forEach(x=>x.enabled=false);
+    const t=st.getAudioTracks()[0];
+    const g=t.getSettings();
+    lg('🎤 MIC OK | label=',t.label,'| enabled=',t.enabled,'| EC=',g.echoCancellation,'| NS=',g.noiseSuppression,'| SR=',g.sampleRate);
+    return st;
   })().catch(e=>{lsProm=null;throw e});
   return lsProm;
 }
@@ -103,30 +111,32 @@ document.addEventListener('click',async()=>{if(ra.paused)ra.play().catch(()=>{})
 
 // ═══════ FIX #2: Explicit transceiver sendrecv → cegah 1-arah ═══════
 function cp(){
-  if(pc){lg('PC exists, reuse');return pc}
+  if(pc){lg('♻️ PC reuse');return pc}
   lg('🆕 createPC');
+  if(!ls||!ls.getAudioTracks().length){lg('❌❌❌ TIDAK ADA AUDIO TRACK!');return null}
+  const track=ls.getAudioTracks()[0];
   pc=new RTCPeerConnection({
-    iceServers:[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun.l.google.com:19302'}],
+    iceServers:[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun1.l.google.com:19302'}],
     iceCandidatePoolSize:10,
     bundlePolicy:'max-bundle',
     rtcpMuxPolicy:'require'
   });
-  // Explicit transceiver SEBELUM addTrack
-  const tr=pc.addTransceiver('audio',{direction:'sendrecv'});
-  const track=ls.getAudioTracks()[0];
-  tr.sender.replaceTrack(track).then(()=>lg('✅ replaceTrack OK enabled=',track.enabled));
-  // Codec: Opus mono
+  // ✅ CARA KLASIK & TERUJI: addTrack + MediaStream (synchronous, tidak ada race)
+  const stream=new MediaStream([track]);
+  const sender=pc.addTrack(track,stream);
+  lg('✅ addTrack | enabled=',track.enabled,'| sender=',!!sender);
+  // Codec: prefer Opus
   try{
     const caps=RTCRtpSender.getCapabilities('audio');
     if(caps&&caps.codecs){
       const opus=caps.codecs.filter(c=>c.mimeType.toLowerCase()==='audio/opus');
       const rest=caps.codecs.filter(c=>c.mimeType.toLowerCase()!=='audio/opus');
-      if(tr.setCodecPreferences)tr.setCodecPreferences([...opus,...rest]);
+      const tr=pc.getTransceivers()[0];
+      if(tr&&tr.setCodecPreferences)tr.setCodecPreferences([...opus,...rest]);
     }
-  }catch(e){}
-  // ONTRACK — verbose
+  }catch(e){lg('codec pref err',e.message)}
   pc.ontrack=e=>{
-    lg('📥 ONTRACK kind=',e.track.kind,'enabled=',e.track.enabled,'streams=',e.streams.length);
+    lg('📥 ONTRACK | kind=',e.track.kind,'| enabled=',e.track.enabled,'| streams=',e.streams.length);
     if(e.streams&&e.streams[0])rst=e.streams[0];
     else{if(!rst)rst=new MediaStream();rst.addTrack(e.track)}
     ra.srcObject=rst;ra.muted=false;ra.volume=1;
@@ -142,15 +152,22 @@ function cp(){
     lg('PC:',pc.connectionState);
     if(pc.connectionState==='connected'){
       $('ms').textContent='LIVE: '+tg;$('ms').className='st ok';
-      $('pb').disabled=false;if(!$('pb').classList.contains('on')){$('pb').textContent='TAHAN UNTUK BICARA';micMuted=true;if(ls)ls.getAudioTracks().forEach(t=>t.enabled=false);}
+      $('pb').disabled=false;
+      if(!$('pb').classList.contains('on')){$('pb').textContent='TAHAN UNTUK BICARA';micMuted=true;if(ls)ls.getAudioTracks().forEach(t=>t.enabled=false)}
       ts('✅ Tersambung','ok');
-      // Verbose: cek kedua arah
+      // ══════ BILATERAL CHECK ══════
       setTimeout(()=>{
-        const s=pc.getSenders().filter(x=>x.track),r=pc.getReceivers().filter(x=>x.track);
-        lg('📤 SENDERS:',s.map(x=>x.track.kind+':'+x.track.enabled).join(',')||'NONE');
-        lg('📥 RECEIVERS:',r.map(x=>x.track.kind+':'+x.track.enabled).join(',')||'NONE');
-        if(r.length===0)lg('⚠️ RECEIVER KOSONG → audio tidak akan masuk!');
-      },400);
+        lg('══════ BILATERAL CHECK ══════');
+        const trs=pc.getTransceivers();
+        trs.forEach((tr,i)=>lg(`  tr[${i}] dir=${tr.direction} cur=${tr.currentDirection} mid=${tr.mid}`));
+        const snds=pc.getSenders().filter(x=>x.track);
+        const rcvs=pc.getReceivers().filter(x=>x.track);
+        lg('📤 SENDERS:',snds.length?snds.map(x=>x.track.kind+':en='+x.track.enabled).join(', '):'❌ NONE');
+        lg('📥 RECEIVERS:',rcvs.length?rcvs.map(x=>x.track.kind+':en='+x.track.enabled).join(', '):'❌ NONE');
+        if(!snds.length)lg('❌❌❌ KIRIM GAGAL — tidak ada sender track!');
+        if(!rcvs.length)lg('❌❌❌ TERIMA GAGAL — tidak ada receiver track!');
+        lg('═════════════════════════════');
+      },500);
     } else if(pc.connectionState==='failed'){$('ms').textContent='Koneksi gagal';try{pc.restartIce()}catch(_){}}
     else if(pc.connectionState==='disconnected')$('ms').textContent='Terputus sementara';
   };
@@ -223,12 +240,16 @@ async function C(){
   caller=1;
   $('ms').textContent='Memanggil '+tg+'...';$('ms').className='st';
   try{
-    await gm();         // ← guarded, tidak akan double
-    cp();                // ← transceiver sendrecv + replaceTrack
+    if(!ls)await gm();
+    if(!pc){const p=cp();if(!p)return ts('Mic gagal','err')}
     const o=await pc.createOffer();
     await pc.setLocalDescription(o);
-    const s=pc.getSenders().filter(x=>x.track);
-    lg('📤 offer siap, senders=',s.length);
+    const sdp=pc.localDescription.sdp;
+    const SR=sdp.includes('a=sendrecv'),SO=sdp.includes('a=sendonly'),RO=sdp.includes('a=recvonly'),IA=sdp.includes('a=inactive');
+    lg('📤 OFFER | sendrecv=',SR,'| sendonly=',SO,'| recvonly=',RO,'| inactive=',IA);
+    pc.getTransceivers().forEach((tr,i)=>lg(`  tr[${i}] dir=${tr.direction} cur=${tr.currentDirection}`));
+    const snds=pc.getSenders().filter(x=>x.track);
+    lg('📤 senders:',snds.length?snds.map(x=>x.track.kind).join(','):'NONE');
     wsSend({type:'call-user',to:tg,sdp:pc.localDescription});
   }catch(e){lg('call err',e);ts('Gagal: '+e.message,'err')}
 }
@@ -239,14 +260,19 @@ async function A(){
   tg=pendingFrom;caller=0;
   $('ms').textContent='Menyambung...';
   try{
-    await gm();
-    cp();
+    if(!ls)await gm();
+    if(!pc){const p=cp();if(!p)return ts('Mic gagal','err')}
     lg('📥 setRemoteDescription...');
     await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
     rds=1;await fc();
     const a=await pc.createAnswer();
     await pc.setLocalDescription(a);
-    lg('📥 answer siap');
+    const sdp=pc.localDescription.sdp;
+    const SR=sdp.includes('a=sendrecv'),SO=sdp.includes('a=sendonly'),RO=sdp.includes('a=recvonly'),IA=sdp.includes('a=inactive');
+    lg('📥 ANSWER | sendrecv=',SR,'| sendonly=',SO,'| recvonly=',RO,'| inactive=',IA);
+    pc.getTransceivers().forEach((tr,i)=>lg(`  tr[${i}] dir=${tr.direction} cur=${tr.currentDirection}`));
+    const snds=pc.getSenders().filter(x=>x.track);
+    lg('📤 senders:',snds.length?snds.map(x=>x.track.kind).join(','):'NONE');
     wsSend({type:'answer',to:tg,sdp:pc.localDescription});
     pendingOffer=null;
   }catch(e){lg('accept err',e);ts('Gagal: '+e.message,'err')}
