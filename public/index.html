@@ -270,7 +270,7 @@ async function A(){
     const a=await pc.createAnswer();await pc.setLocalDescription(a);
     wsS({type:'answer',to:tg,sdp:pc.localDescription});po=null}catch(e){lg('acc',e);ts('gagal','e')}
 }
-async function oa(m){try{if(!pc)return;await pc.setRemoteDescription(new RTCSessionDescription(m.sdp));rds=1;await fc()}catch(e){lg('ans',e)}}
+async function oa(m){try{if(!pc)return;await pc.setRemoteDescription(new RTCSessionDescription(m.sdp));rds=1;await fc();[0,300,1000].forEach(t=>setTimeout(ll,t))}catch(e){lg('ans',e)}}
 async function oi(m){if(!pc)return;const c=new RTCIceCandidate(m.candidate);if(!rds){pend.push(c);return}try{await pc.addIceCandidate(c)}catch(e){}}
 function U(a){ra.muted=false;ra.volume=1;ra.play().then(()=>{if(a)ts('🔊 audio','k')}).catch(()=>{if(a)ts('tap lagi','e')});if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
 function R(){
@@ -329,7 +329,43 @@ function buildHT(){
   ht.appendChild(b);
   lg('📻 Frame HT di-render via JS');
 }
-buildHT();wsC();
+function ll(){
+  if(!pc)return;
+  try{
+    const all=[...pc.getSenders(),...pc.getReceivers()];
+    all.forEach(x=>{
+      try{if('playoutDelayHint'in x)x.playoutDelayHint=0}catch(_){}
+      try{if('jitterBufferTarget'in x)x.jitterBufferTarget=0}catch(_){}
+      try{if(x.track&&x.track.contentHint!==undefined)x.track.contentHint='speech'}catch(_){}
+    });
+    lg('⚡lowlat',all.length,'nodes');
+  }catch(e){lg('ll err',e.message)}
+}
+buildHT();let lastRtt=0,rttWarn=0;
+async function rttWatchdog(){
+  if(!pc||pc.connectionState!=='connected')return;
+  try{
+    const s=await pc.getStats();let rtt=null;
+    s.forEach(r=>{if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.nominated&&r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime});
+    if(rtt&&rtt>0){
+      const ms=rtt*1000;
+      if(ms>lastRtt*1.5&&ms>80){rttWarn++;lg('⚠️ RTT naik',ms.toFixed(0),'ms → reapply ll');ll();if(rttWarn>3){try{pc.restartIce();rttWarn=0}catch(_){}}}
+      else rttWarn=0;
+      lastRtt=ms;
+    }
+  }catch(e){}
+}
+setInterval(rttWatchdog,4000);
+function ptimeMunge(sdp){
+  if(!sdp)return sdp;
+  return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*)/g,(m,pt,params)=>{
+    if(!/opus/i.test(params))return m;
+    let p=params.replace(/minptime=\d+/g,'').replace(/useinbandfec=\d+/g,'').replace(/usedtx=\d+/g,'');
+    p=p.trim()+' minptime=10;useinbandfec=0;usedtx=0';
+    return 'a=fmtp:'+pt+' '+p;
+  });
+}
+wsC();
 'serviceWorker' in navigator && navigator.serviceWorker.register('/sw.js').catch(()=>{});
 const uo=()=>{const b=$('ob');if(navigator.onLine)b.classList.remove('on');else{b.classList.add('on');net('','OFFLINE')}};
 window.addEventListener('online',()=>{uo();if(!wr)wsC()});
