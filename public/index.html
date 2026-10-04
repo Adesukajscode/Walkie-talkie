@@ -455,4 +455,13 @@ wsC();
 const uo=()=>{const b=$('ob');if(navigator.onLine)b.classList.remove('on');else{b.classList.add('on');net('','OFFLINE')}};
 window.addEventListener('online',()=>{uo();if(!wr)wsC()});
 window.addEventListener('offline',uo);uo();
+
+// ═══ AUTO-INIT GATE BUTTON ═══
+(function initGate(){
+  function go(){try{buildGateBtn()}catch(e){console.warn('gate init',e)}}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go,{once:true});
+  else go();
+  setTimeout(go,300);
+  setTimeout(go,1200);
+})();
 </script></body></html>
