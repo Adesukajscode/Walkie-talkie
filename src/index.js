@@ -10,7 +10,15 @@ export default {
       const r = await env.ROOM.get(env.ROOM.idFromName('global')).fetch('https://do/users');
       return new Response(await r.text(), { headers: { 'content-type': 'application/json' } });
     }
-    return env.ASSETS.fetch(req);
+    const r = await env.ASSETS.fetch(req);
+    const ct = r.headers.get('content-type') || '';
+    if (ct.includes('html')) {
+      const h = new Headers(r.headers);
+      h.set('cache-control', 'no-store, no-cache, must-revalidate');
+      h.set('pragma', 'no-cache');
+      return new Response(r.body, { status: r.status, headers: h });
+    }
+    return r;
   }
 };
 

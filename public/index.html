@@ -1,90 +1,82 @@
 <!DOCTYPE html><html><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1,user-scalable=no"><title>Walkie</title><style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{height:100%}
-body{font-family:system-ui,sans-serif;background:radial-gradient(ellipse at 50% 10%,#1a1a28,#0a0a0f 70%);color:#eaf0ff;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px}
+body{font-family:system-ui;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;font-size:15px}
 .w{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px}
-.ht{padding-top:90px;position:relative}
-.ant{position:absolute;top:0;left:50%;transform:translateX(-50%);width:10px;height:90px;display:flex;flex-direction:column;align-items:center;z-index:2}
-.ant .s1{flex:1;width:100%;background:linear-gradient(180deg,#4a4a58,#2a2a35);border-radius:3px;box-shadow:inset -2px 0 3px rgba(0,0,0,.5)}
-.ant .s2{flex:.8;width:80%;background:linear-gradient(180deg,#3a3a48,#1e1e28);border-radius:3px;margin-top:2px}
-.ant .s3{flex:.6;width:60%;background:linear-gradient(180deg,#2a2a35,#0d0d12);border-radius:3px;margin-top:2px}
-.ant .tip{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#4a4a58,#0a0a0f);margin-top:-2px}
-.topbar{display:flex;justify-content:space-between;align-items:flex-end;padding:0 14px;margin-bottom:-6px;position:relative;z-index:3}
-.knob{width:30px;height:24px;background:linear-gradient(180deg,#3a3a48,#15151c);border-radius:6px 6px 3px 3px;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
-.knob::after{content:'';position:absolute;top:50%;left:50%;width:2px;height:8px;background:#5a5a68;transform:translate(-50%,-50%)}
-.led{width:11px;height:11px;border-radius:50%;background:#3a1010;margin-bottom:8px;transition:.2s;box-shadow:0 0 0 2px #0a0a0f}
-.led.on{background:#00ff88;box-shadow:0 0 14px #00ff88,0 0 0 2px #0a0a0f}
-.led.w{background:#ffb300;box-shadow:0 0 14px #ffb300,0 0 0 2px #0a0a0f}
-.led.tx{background:#ff2d95;box-shadow:0 0 18px #ff2d95,0 0 0 2px #0a0a0f}
-.body{background:linear-gradient(180deg,#252530,#12121a 60%,#0a0a10);border-radius:14px 14px 22px 22px;padding:16px 14px 18px;box-shadow:inset 0 2px 0 rgba(255,255,255,.1),inset 0 -4px 8px rgba(0,0,0,.6),0 20px 40px rgba(0,0,0,.6)}
-.lcd{background:linear-gradient(180deg,#0d2418,#061410);border:1px solid #1a3020;border-radius:6px;padding:10px 12px;font-family:ui-monospace,monospace;color:#00ff88;text-shadow:0 0 6px rgba(0,255,136,.8);margin-bottom:12px;min-height:80px;box-shadow:inset 0 2px 6px rgba(0,0,0,.8);position:relative;overflow:hidden}
-.lcd::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,255,136,.06) 0 1px,transparent 1px 3px);pointer-events:none}
-.lcd .r1{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;opacity:.8;margin-bottom:4px}
-.lcd .r2{font-size:1.15rem;letter-spacing:2px;font-weight:700}
-.grille{height:40px;margin:10px 34px;background:radial-gradient(circle,rgba(255,255,255,.18) 1.2px,transparent 1.5px) 0 0/7px 7px;border-radius:5px;opacity:.5;border:1px solid rgba(0,0,0,.5);box-shadow:inset 0 2px 4px rgba(0,0,0,.7)}
-.pttwrap{display:flex;justify-content:center;padding:6px 0}
-.ptt{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#4a4a58,#1e1e28 55%,#0a0a10);border:2px solid #2a2a35;color:#7a7a88;font-family:inherit;font-size:.72rem;font-weight:900;letter-spacing:5px;text-transform:uppercase;padding:0;cursor:pointer;touch-action:none;-webkit-touch-callout:none;box-shadow:inset 0 4px 0 rgba(255,255,255,.1),inset 0 -8px 14px rgba(0,0,0,.75),0 8px 18px rgba(0,0,0,.6),0 0 0 4px #0a0a10;transition:.15s}
+h1{text-align:center;color:#00e0ff;font-size:1rem;letter-spacing:3px}
+.bar{text-align:center;padding:12px;background:#14141c;border-radius:8px;font-size:.8rem;color:#8a8a98}
+.led{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff3860;margin-right:8px;vertical-align:middle}
+.led.on{background:#00ff88;box-shadow:0 0 10px #00ff88}
+.led.w{background:#ffb300;box-shadow:0 0 10px #ffb300}
+input{padding:14px;border-radius:10px;border:1px solid #252532;background:#14141c;color:#fff;font-size:1rem;outline:none;width:100%;font-family:inherit}
+input:focus{border-color:#00e0ff}
+button{padding:14px;border:none;border-radius:10px;font-weight:800;font-size:.85rem;cursor:pointer;text-transform:uppercase;letter-spacing:1.5px;width:100%;font-family:inherit;transition:.15s}
+button:active{transform:scale(.97)}
+.p{background:#00e0ff;color:#000}
+.g{background:#00ff88;color:#001a0d}
+.r{background:#ff3860;color:#fff}
+.b{background:#7d8ab0;color:#000}
+.row{display:flex;gap:8px}
+.row button{flex:1}
+.ptt{padding:44px;border-radius:50%;width:150px;height:150px;margin:12px auto;background:#1a1a22;border:3px solid #2a2a35;color:#888;font-size:.9rem;font-weight:900;letter-spacing:3px;width:150px}
+.ptt.on{background:#5a1a3a;border-color:#ff2d95;color:#fff;box-shadow:0 0 40px #ff2d95}
 .ptt:disabled{opacity:.4}
-.ptt.on{border-color:#ff2d95;color:#fff;background:radial-gradient(circle at 38% 32%,#6a1a4a,#2a0a1f 55%,#0a0a10);box-shadow:inset 0 4px 0 rgba(255,45,149,.3),0 8px 24px rgba(255,45,149,.4),0 0 0 4px #0a0a10,0 0 40px rgba(255,45,149,.6);transform:scale(.97)}
-.keys{display:flex;justify-content:center;gap:6px;margin-top:10px}
-.k{padding:9px 10px;border:1px solid #2a2a35;background:linear-gradient(180deg,#2a2a35,#15151c);border-radius:6px;color:#8a8a98;font-size:.62rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;flex:1}
-.k:active{background:#00e0ff;color:#000}
-.panel{display:flex;gap:6px;width:100%}
-.panel input{flex:1;padding:13px 14px;border-radius:11px;border:1px solid #252532;background:#14141c;color:#fff;font-size:.9rem;outline:none;min-width:0;font-family:inherit}
-.panel input::placeholder{color:#5a6580}
-.panel input:focus{border-color:#00e0ff}
-.panel button{padding:13px 18px;border:none;border-radius:11px;font-size:.78rem;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
-.b1{background:#00e0ff;color:#000}
-.b2{background:#00ff88;color:#001a0d}
 .h{display:none!important}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
-.modal.on{display:flex}
-.mcard{background:#1e1e28;border:1px solid #ffb300;border-radius:18px;padding:24px;text-align:center;max-width:320px;width:100%;box-shadow:0 0 40px rgba(255,179,0,.4)}
-.mcard p{color:#ffb300;font-size:.82rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
-.mcard b{color:#00e0ff;display:block;font-size:1.15rem;margin-top:6px;font-family:ui-monospace,monospace;letter-spacing:2px;margin-bottom:16px}
-.mcard .row{display:flex;gap:8px}
-.mcard .row button{flex:1;padding:14px;border-radius:11px;border:none;font-weight:800;font-size:.82rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;font-family:inherit}
-.yes{background:#00ff88;color:#001a0d}
-.no{background:transparent;border:1px solid #252532;color:#7d8ab0}
-#ts{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120px);background:#14141c;border:1px solid #252532;padding:12px 20px;border-radius:12px;font-size:.78rem;z-index:999;transition:.35s;max-width:90vw;text-align:center;pointer-events:none}
+#ts{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-120px);background:#1a1a22;border:1px solid #252532;padding:12px 20px;border-radius:10px;font-size:.8rem;transition:.3s;pointer-events:none;z-index:999;max-width:90vw;text-align:center}
 #ts.on{transform:translateX(-50%) translateY(0)}
 #ts.e{border-color:#ff3860;color:#ff3860}
 #ts.k{border-color:#00ff88;color:#00ff88}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
+.modal.on{display:flex}
+.mcard{background:#1e1e28;border:1px solid #ffb300;border-radius:16px;padding:24px;text-align:center;max-width:320px;width:100%}
+.mcard b{color:#00e0ff;display:block;font-size:1.2rem;margin-bottom:16px;font-family:monospace}
 audio{display:none}
 </style></head><body>
 <div id=ts></div>
 <audio id=ra autoplay playsinline></audio>
 <div class=w>
-<div class=ht>
-<div class=ant><div class=s1></div><div class=s2></div><div class=s3></div><div class=tip></div></div>
-<div class=topbar><div class=knob></div><div class=led id=led></div><div class=knob></div></div>
-<div class=body>
-<div class=lcd>
-<div class=r1 id=st>CONNECTING</div>
-<div class=r2 id=idv>----</div>
+<h1>WALKIE</h1>
+<div class=bar><span class=led id=led></span><span id=st>MEMUAT...</span></div>
+
+<div id=f1>
+<input id=mn type=tel placeholder="08..." inputmode=numeric maxlength=15>
+<button class=p onclick="window.R()" style="margin-top:8px">MULAI</button>
 </div>
-<div class=grille></div>
-<div class=pttwrap><button class=ptt id=pb disabled ontouchstart="ST(event)" ontouchend="SP(event)" ontouchcancel="SP(event)" onmousedown="ST(event)" onmouseup="SP(event)" onmouseleave="SP(event)">PTT</button></div>
-<div class=keys>
-<button class=k onclick="M()">MATCH</button>
-<button class=k onclick="E()">AKHIRI</button>
-<button class=k onclick="L()">KELUAR</button>
+
+<div id=f2 class=h>
+<div class=bar id=idv>----</div>
+<button class=ptt id=pb disabled>PTT</button>
+<input id=tn type=tel placeholder="nomor tujuan" inputmode=numeric maxlength=15>
+<div class=row style="margin-top:8px">
+<button class=g onclick="window.M()">MATCH</button>
+<button class=g onclick="window.C()">PANGGIL</button>
+</div>
+<div class=row style="margin-top:8px">
+<button class=r onclick="window.E()">AKHIRI</button>
+<button class=b onclick="window.L()">KELUAR</button>
 </div>
 </div>
+
 </div>
-<div id=f1 class=panel><input id=mn type=tel placeholder="08..." inputmode=numeric maxlength=15><button class=b1 onclick="R()">MULAI</button></div>
-<div id=f2 class="panel h"><input id=tn type=tel placeholder="nomor tujuan" inputmode=numeric maxlength=15><button class=b2 onclick="C()">PANGGIL</button></div>
-</div>
-<div class=modal id=modal><div class=mcard><p>Panggilan masuk</p><b id=ci>----</b><div class=row><button class=yes onclick="A()">Terima</button><button class=no onclick="X()">Tolak</button></div></div></div>
+<div class=modal id=modal><div class=mcard><p style="color:#ffb300;margin-bottom:12px">Panggilan masuk</p><b id=ci>----</b><div class=row><button class=g onclick="window.A()">Terima</button><button class=r onclick="window.X()">Tolak</button></div></div></div>
 <script>
 'use strict';
+
+// ==== BUNUH SERVICE WORKER LAMA ====
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(rs){
+    rs.forEach(function(r){r.unregister();console.log('[W] SW unregistered')});
+  }).catch(function(){});
+  if(window.caches){
+    caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})}).catch(function(){});
+  }
+}
+
 var $=function(i){return document.getElementById(i)};
 var cl=function(n){return String(n||'').replace(/\D/g,'')};
 var lg=function(){console.log.apply(console,['[W]'].concat([].slice.call(arguments)))};
 var ttm=null;
-function ts(m,c){var e=$('ts');e.textContent=m;e.className=(c?'on '+c:'on');clearTimeout(ttm);ttm=setTimeout(function(){e.className=(c||'')},2500)}
-function st(t){$('st').textContent=t}
-function led(c){$('led').className='led'+(c?' '+c:'')}
+function ts(m,c){var e=$('ts');if(!e)return;e.textContent=m;e.className=(c?'on '+c:'on');clearTimeout(ttm);ttm=setTimeout(function(){e.className=(c||'')},3000)}
+function setSt(t,c){var e=$('st');if(e)e.textContent=t;var l=$('led');if(l)l.className='led'+(c?' '+c:'')}
 
 var ws=null,wr=false,retry=0,pingT=null;
 var my=localStorage.getItem('myNo')||'';
@@ -92,68 +84,64 @@ var tg='',caller=false;
 var pc=null,ls=null,rs=null,pend=[],rds=false;
 var po=null,pf=null;
 var ra=$('ra');
-ra.muted=false;ra.volume=1;
+if(ra){ra.muted=false;ra.volume=1}
 var WU=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
 
+// ==== WEBSOCKET ====
 function wsConn(){
   lg('ws->',WU);
-  st('CONNECTING');led('w');
-  try{ws=new WebSocket(WU)}catch(e){lg('ws err',e.message);st('ERR');setTimeout(wsConn,2000);return}
+  setSt('CONNECTING','w');
+  try{ws=new WebSocket(WU)}catch(e){lg('ws create err',e.message);setSt('ERR');setTimeout(wsConn,2000);return}
   ws.onopen=function(){
     wr=true;retry=0;lg('ws OPEN');
-    st('ONLINE');led('on');
+    setSt('ONLINE','on');
     if(my){wsSend({type:'register',no:my});lg('auto-reg',my)}
     clearInterval(pingT);pingT=setInterval(function(){wsSend({type:'ping'})},20000);
   };
-  ws.onmessage=function(e){try{om(JSON.parse(e.data))}catch(err){lg('parse err',err.message)}};
+  ws.onmessage=function(e){try{om(JSON.parse(e.data))}catch(err){lg('parse',err.message)}};
   ws.onclose=function(e){
-    wr=false;clearInterval(pingT);lg('ws CLOSE code=',e.code);
-    st('RECONNECT');led('w');retry++;
+    wr=false;clearInterval(pingT);lg('ws CLOSE',e.code);
+    setSt('RECONNECT','w');retry++;
     setTimeout(wsConn,Math.min(1000*retry,5000));
   };
-  ws.onerror=function(){lg('ws ERR');st('ERR');led()};
+  ws.onerror=function(){lg('ws ERR');setSt('ERR')};
 }
 function wsSend(o){if(ws&&ws.readyState===1){try{ws.send(JSON.stringify(o))}catch(e){}}else lg('ws not ready',o.type)}
 
+// ==== MIC ====
 var lp=null;
 function getMic(){
   if(ls)return Promise.resolve(ls);
   if(lp)return lp;
-  lg('getUserMedia...');
+  if(!navigator.mediaDevices)return Promise.reject(new Error('no mic'));
   lp=navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false})
-    .then(function(s){
-      ls=s;
-      s.getAudioTracks().forEach(function(t){t.enabled=false});
-      lg('mic OK');
-      return s;
-    })
+    .then(function(s){ls=s;s.getAudioTracks().forEach(function(t){t.enabled=false});lg('mic OK');return s})
     .catch(function(e){lp=null;lg('mic err',e.message);throw e});
   return lp;
 }
 getMic().catch(function(){});
 
+// ==== MESSAGE HANDLER ====
 function om(m){
   var t=m.type;
   if(t==='pong'||t==='welcome')return;
-  lg('<-',t,m.msg||m.no||m.from||'');
+  lg('<-',t);
   if(t==='registered'){
     my=m.no;localStorage.setItem('myNo',m.no);
-    $('f1').classList.add('h');
-    $('f2').classList.remove('h');
-    $('idv').textContent=m.no;
+    var f1=$('f1'),f2=$('f2'),idv=$('idv');
+    if(f1)f1.classList.add('h');
+    if(f2)f2.classList.remove('h');
+    if(idv)idv.textContent=m.no;
     ts('OK '+m.no,'k');
     getMic().catch(function(){});
   }
   else if(t==='error'){ts('ERR '+m.msg,'e')}
-  else if(t==='online'){lg('users online:',m.list)}
-  else if(t==='match-found'){
-    ts('match '+m.no,'k');
-    tg=m.no;caller=true;doCall();
-  }
+  else if(t==='online'){lg('online:',(m.list||[]).join(','))}
+  else if(t==='match-found'){ts('match '+m.no,'k');tg=m.no;caller=true;doCall()}
   else if(t==='incoming'){
     po=m.sdp;pf=m.from;
-    $('ci').textContent=m.from;
-    $('modal').classList.add('on');
+    var ci=$('ci');if(ci)ci.textContent=m.from;
+    var md=$('modal');if(md)md.classList.add('on');
     if(navigator.vibrate)try{navigator.vibrate([200,100,200])}catch(_){}
   }
   else if(t==='accepted'){onAccepted()}
@@ -163,69 +151,77 @@ function om(m){
   else if(t==='ice'){onIce(m)}
 }
 
-function R(){
-  var n=cl($('mn').value);
+// ==== ACTIONS (expose ke window) ====
+window.R=function(){
+  lg('R() called');
+  var mn=$('mn');if(!mn)return;
+  var n=cl(mn.value);
   if(!n)return ts('masukkan nomor','e');
   if(n.length<8)return ts('min 8 digit','e');
-  if(!/^(0|62)?8\d{7,13}$/.test(n))return ts('format 08xxx','e');
   my=n;localStorage.setItem('myNo',n);
-  if(wr)wsSend({type:'register',no:n});
+  if(wr){wsSend({type:'register',no:n});ts('mendaftar...','k')}
   else ts('menunggu koneksi...','e');
-}
+};
 
-function M(){
+window.M=function(){
   if(!wr)return ts('belum konek','e');
   ts('mencari user online...','k');
   wsSend({type:'match'});
-}
+};
 
-function C(){
-  var t=cl($('tn').value);
+window.C=function(){
+  var tn=$('tn');if(!tn)return;
+  var t=cl(tn.value);
   if(!t)return ts('nomor tujuan kosong','e');
   if(t===my)return ts('tidak bisa diri sendiri','e');
   if(!wr)return ts('belum konek','e');
   tg=t;caller=true;doCall();
-}
+};
 
-function doCall(){
-  ts('memanggil '+tg,'k');
-  getMic().then(function(){
-    if(!pc)mkPC();
-    return pc.createOffer();
-  }).then(function(o){
-    return pc.setLocalDescription(o);
-  }).then(function(){
-    wsSend({type:'call',to:tg,sdp:pc.localDescription});
-    lg('offer sent');
-  }).catch(function(e){ts('gagal '+e.message,'e');lg('doCall err',e.message)});
-}
-
-function A(){
-  $('modal').classList.remove('on');
+window.A=function(){
+  var md=$('modal');if(md)md.classList.remove('on');
   if(!po)return;
-  tg=pf;caller=false;
-  ts('menyambung...','k');
+  tg=pf;caller=false;ts('menyambung...','k');
   getMic().then(function(){
     if(!pc)mkPC();
     return pc.setRemoteDescription(new RTCSessionDescription(po));
-  }).then(function(){
-    rds=true;return flushICE();
-  }).then(function(){
-    return pc.createAnswer();
-  }).then(function(a){
-    return pc.setLocalDescription(a);
-  }).then(function(){
+  }).then(function(){rds=true;return flushICE()})
+  .then(function(){return pc.createAnswer()})
+  .then(function(a){return pc.setLocalDescription(a)})
+  .then(function(){
     wsSend({type:'accept',to:tg});
     wsSend({type:'sdp',to:tg,sdp:pc.localDescription});
-    po=null;
-    lg('answer sent');
-  }).catch(function(e){ts('gagal','e');lg('accept err',e.message)});
-}
+    po=null;lg('answer sent');
+  }).catch(function(e){ts('gagal '+e.message,'e');lg('acc err',e.message)});
+};
 
-function X(){$('modal').classList.remove('on');if(pf)wsSend({type:'reject',to:pf});po=null;pf=null}
-function E(){if(tg&&wr)wsSend({type:'end',to:tg});cleanup();ts('selesai')}
-function L(){try{wsSend({type:'end',to:tg})}catch(e){}localStorage.removeItem('myNo');location.reload()}
+window.X=function(){var md=$('modal');if(md)md.classList.remove('on');if(pf)wsSend({type:'reject',to:pf});po=null;pf=null};
+window.E=function(){if(tg&&wr)wsSend({type:'end',to:tg});cleanup();ts('selesai')};
+window.L=function(){try{wsSend({type:'end',to:tg})}catch(e){}localStorage.removeItem('myNo');location.reload()};
 
+window.ST=function(e){
+  if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
+  try{
+    if(!ls||!ls.getAudioTracks){ts('mic belum siap','e');return}
+    var t=ls.getAudioTracks()[0];
+    if(t)t.enabled=true;
+    if(ra)ra.volume=0;
+    var pb=$('pb');if(pb)pb.classList.add('on');
+    if(navigator.vibrate)try{navigator.vibrate(15)}catch(_){}
+    lg('PTT ON');
+  }catch(err){lg('ST err',err.message)}
+};
+window.SP=function(e){
+  if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
+  try{
+    if(ls&&ls.getAudioTracks)ls.getAudioTracks().forEach(function(t){t.enabled=false});
+    if(ra)ra.volume=1;
+    var pb=$('pb');if(pb)pb.classList.remove('on');
+    lg('PTT OFF');
+  }catch(err){lg('SP err',err.message)}
+};
+
+// ==== PEER CONNECTION ====
 function mkPC(){
   if(pc)return pc;
   if(!ls||!ls.getAudioTracks().length){lg('NO TRACK');return null}
@@ -240,31 +236,30 @@ function mkPC(){
     lg('ONTRACK',e.track.kind);
     if(e.streams&&e.streams[0])rs=e.streams[0];
     else{if(!rs)rs=new MediaStream();rs.addTrack(e.track)}
-    ra.srcObject=rs;
-    ra.muted=false;
-    ra.volume=1;
-    ra.play().then(function(){lg('play OK')}).catch(function(err){lg('play err',err.message)});
+    if(ra){
+      ra.srcObject=rs;
+      ra.muted=false;
+      ra.volume=1;
+      ra.play().then(function(){lg('play OK')}).catch(function(err){lg('play err',err.message)});
+    }
   };
-  pc.onicecandidate=function(e){
-    if(e.candidate)wsSend({type:'ice',to:tg,ice:e.candidate});
-  };
+  pc.onicecandidate=function(e){if(e.candidate)wsSend({type:'ice',to:tg,ice:e.candidate})};
   pc.onconnectionstatechange=function(){
     lg('PC',pc.connectionState);
     if(pc.connectionState==='connected'){
-      $('pb').disabled=false;
+      var pb=$('pb');if(pb)pb.disabled=false;
       ts('LIVE','k');
     }
   };
   return pc;
 }
 
-function flushICE(){
-  if(!pc||!rds)return Promise.resolve();
-  var c=Promise.resolve();
-  while(pend.length){
-    (function(ice){c=c.then(function(){return pc.addIceCandidate(ice).catch(function(){})})})(pend.shift());
-  }
-  return c;
+function doCall(){
+  ts('memanggil '+tg,'k');
+  getMic().then(function(){if(!pc)mkPC();return pc.createOffer()})
+    .then(function(o){return pc.setLocalDescription(o)})
+    .then(function(){wsSend({type:'call',to:tg,sdp:pc.localDescription});lg('offer sent')})
+    .catch(function(e){ts('gagal','e');lg('doCall err',e.message)});
 }
 
 function onAccepted(){
@@ -295,40 +290,46 @@ function onIce(m){
   pc.addIceCandidate(c).catch(function(){});
 }
 
+function flushICE(){
+  if(!pc||!rds)return Promise.resolve();
+  var c=Promise.resolve();
+  while(pend.length){
+    (function(ice){c=c.then(function(){return pc.addIceCandidate(ice).catch(function(){})})})(pend.shift());
+  }
+  return c;
+}
+
 function cleanup(){
   try{if(pc)pc.close()}catch(e){}
   pc=null;
   try{if(ls)ls.getTracks().forEach(function(t){t.stop()})}catch(e){}
-  ls=null;lp=null;rs=null;ra.srcObject=null;
+  ls=null;lp=null;rs=null;
+  if(ra)ra.srcObject=null;
   pend=[];rds=false;
-  $('pb').disabled=true;
-  $('pb').classList.remove('on');
+  var pb=$('pb');if(pb){pb.disabled=true;pb.classList.remove('on')}
   po=null;pf=null;
 }
 
-function ST(e){
-  if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
-  try{
-    if(!ls||!ls.getAudioTracks)return ts('mic belum siap','e');
-    var t=ls.getAudioTracks()[0];
-    if(t)t.enabled=true;
-    ra.volume=0;
-    $('pb').classList.add('on');
-    if(navigator.vibrate)try{navigator.vibrate(15)}catch(_){}
-    lg('PTT ON');
-  }catch(err){lg('ST err',err.message)}
-}
-function SP(e){
-  if(e){e.preventDefault();if(e.stopPropagation)e.stopPropagation()}
-  try{
-    if(ls&&ls.getAudioTracks)ls.getAudioTracks().forEach(function(t){t.enabled=false});
-    ra.volume=1;
-    $('pb').classList.remove('on');
-    lg('PTT OFF');
-  }catch(err){lg('SP err',err.message)}
-}
+// ==== PTT EVENTS (manual listener — biar pasti) ====
+setTimeout(function(){
+  var pb=$('pb');
+  if(pb){
+    pb.addEventListener('touchstart',window.ST,{passive:false});
+    pb.addEventListener('touchend',window.SP,{passive:false});
+    pb.addEventListener('touchcancel',window.SP,{passive:false});
+    pb.addEventListener('mousedown',window.ST);
+    pb.addEventListener('mouseup',window.SP);
+    pb.addEventListener('mouseleave',window.SP);
+    lg('PTT listeners attached');
+  }
+},0);
 
-window.addEventListener('error',function(e){lg('ERR',e.message)});
-window.addEventListener('online',function(){if(!wr)wsConn()});
+window.addEventListener('error',function(e){lg('ERR',e.message,'@',e.lineno)});
+
+// ==== AUTO-START WS ====
 wsConn();
+lg('init done');
+
+// Notif saat sudah konek
+var origOnopen=null;
 </script></body></html>
