@@ -271,11 +271,15 @@ function C(){
 }
 
 function M(){
-  if(matching)return;
   if(!wr)return ts('belum konek','e');
+  if(matching)return;
   matching=true;
   ts('🔍 mencari...','k');
   wsSend({type:'match'});
+  lg('send match');
+  setTimeout(function(){
+    if(matching){matching=false;ts('tidak ada respon','e')}
+  },10000);
 }
 
 function doCall(t){
