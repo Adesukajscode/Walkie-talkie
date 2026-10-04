@@ -1,12 +1,11 @@
 name = "walkie-talkie"
 main = "src/index.js"
 compatibility_date = "2025-01-01"
-compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./public"
 binding = "ASSETS"
-not_found_handling = "none"
+not_found_handling = "single-page-application"
 run_worker_first = true
 
 [durable_objects]
@@ -18,6 +17,3 @@ new_sqlite_classes = ["Room"]
 
 [observability]
 enabled = true
-
-[placement]
-mode = "smart"
