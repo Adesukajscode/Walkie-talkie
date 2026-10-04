@@ -244,7 +244,7 @@ function wsC(){
 const wsS=o=>{if(ws&&ws.readyState===1){try{ws.send(JSON.stringify(o))}catch(e){}}};
 function om(m){
   const t=m.type;if(t==='pong'||t==='welcome')return;lg('<-',t);
-  if(t==='registered'){rp=0;clearTimeout(rT);my=m.no;localStorage.setItem('myNo',m.no);$('rs').classList.add('h');$('cs').classList.remove('h');$('cs').style.display='flex';$('idv').textContent='ID '+m.no;rbR();ts('✅ '+m.no,'k');gm().then(()=>pw()).catch(()=>{})}
+  if(t==='registered'){rp=0;clearTimeout(rT);my=m.no;localStorage.setItem('myNo',m.no);$('rs').classList.add('h');$('cs').classList.remove('h');$('cs').style.display='flex';$('idv').textContent='ID '+m.no;rbR();ts('✅ '+m.no,'k');gm().then(()=>{if(ls&&!activeTx)activeTx=ls.getAudioTracks()[0];pw()}).catch(()=>{})}
   else if(t==='error'){rp=0;clearTimeout(rT);rbR();ts('❌ '+m.msg,'e')}
   else if(t==='online'){}
   else if(t==='force-logout'){ts('nomor dipakai HP lain','e');setTimeout(L,1500)}
@@ -309,6 +309,23 @@ function SP(e){
   $('pb').classList.remove('on');lg('🔇 OFF');
 }
 let rxChain=null,rxLevel=1,fbCount=0,fbLast=0,tailTimer=null;
+let activeTx=null;
+function setTxTrack(track){
+  if(!track)return;
+  if(pc){
+    const snd=pc.getSenders().find(x=>x.track&&x.track.kind==='audio');
+    if(snd){
+      snd.replaceTrack(track).then(()=>{
+        activeTx=track;
+        track.enabled=false;
+        lg('🎤 Tx track aktif:',track.label||'processed');
+      }).catch(e=>{lg('replaceTrack err',e.message);activeTx=track});
+      return;
+    }
+  }
+  activeTx=track;
+  track.enabled=false;
+}
 function setRxLevel(v,ramp){
   rxLevel=v;
   if(!rxChain){try{ra.volume=v}catch(_){};return}
@@ -370,11 +387,13 @@ setInterval(feedbackCheck,250);
 let ngProc=null,ngOn=0,ngSrc=null,ngHp=null,ngBp=null,ngGate=null,ngAn=null,ngData=null,ngRaf=null,ngEnv=0,ngNoiseFloor=8,ngSamples=[];
 function buildNgBtn(){
   if(document.getElementById('ngbtn'))return;
+  const bar=document.getElementById('fabBar');
+  if(!bar){setTimeout(buildNgBtn,300);return}
   const b=document.createElement('button');
   b.id='ngbtn';b.textContent='▤';b.title='Noise Gate';
-  b.style.cssText='position:fixed;bottom:20px;right:88px;width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#2a2a35,#15151c);border:2px solid #2a2a35;color:#888;font-size:1.4rem;font-family:inherit;cursor:pointer;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);transition:.2s;display:flex;align-items:center;justify-content:center;padding:0';
+  b.style.cssText='width:52px;height:52px;border-radius:50%;background:linear-gradient(180deg,#2a2a35,#15151c);border:2px solid #2a2a35;color:#888;font-size:1.4rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 4px 12px rgba(0,0,0,.5);transition:.2s';
   b.onclick=toggleNg;
-  document.body.appendChild(b);
+  bar.appendChild(b);
   lg('🔇 Tombol Noise Gate di-inject');
 }
 function toggleNg(){
@@ -413,15 +432,7 @@ function startNg(){
     gate.connect(an);
     // Replace mic track dengan processed stream
     const proc=dest.stream.getAudioTracks()[0];
-    if(proc){
-      proc.enabled=false;
-      // Ganti sender track kalau pc ada
-      if(pc){
-        const snd=pc.getSenders().find(x=>x.track&&x.track.kind==='audio');
-        if(snd)snd.replaceTrack(proc).then(()=>lg('🔇 Track mic diganti processed')).catch(e=>lg('replaceTrack err',e.message));
-      }
-      ngProc=proc;
-    }
+    if(proc){proc.enabled=false;ngProc=proc;setTxTrack(proc)}
     ngSrc=src;ngHp=hp;ngBp=bp;ngGate=gate;ngAn=an;
     ngData=new Uint8Array(an.frequencyBinCount);
     ngSamples=[];ngNoiseFloor=8;ngEnv=0;
@@ -453,14 +464,7 @@ function startNg(){
 function stopNg(){
   ngOn=0;
   if(ngRaf){cancelAnimationFrame(ngRaf);ngRaf=null}
-  // Kembalikan track mic asli ke sender
-  if(pc&&ls&&ls.getAudioTracks().length){
-    const orig=ls.getAudioTracks()[0];
-    if(orig){orig.enabled=false;
-      const snd=pc.getSenders().find(x=>x.track&&x.track.kind==='audio');
-      if(snd)snd.replaceTrack(orig).then(()=>lg('🔇 Track mic asli dipulihkan')).catch(()=>{});
-    }
-  }
+  if(ls&&ls.getAudioTracks().length){const orig=ls.getAudioTracks()[0];if(orig){orig.enabled=false;setTxTrack(orig)}}
   try{ngSrc&&ngSrc.disconnect();ngGate&&ngGate.disconnect();ngHp&&ngHp.disconnect();ngBp&&ngBp.disconnect()}catch(_){}
   ngProc=null;ngSrc=null;ngGate=null;ngAn=null;ngData=null;
   lg('🔇 Noise Gate off');
@@ -527,15 +531,14 @@ let echoGate=0,micGate=0,micAnalyser=null,micSource=null,micData=null,gateRaf=nu
 const GATE_NAMES=['NORMAL','ECHO-GATE','CLEAN-GATE'];
 function buildGateBtn(){
   if(document.getElementById('gbtn'))return;
-  // Cari target: .keys, .body, .wrap, atau fallback body
-  const target=document.querySelector('.keys')||document.querySelector('.body')||document.querySelector('.wrap')||document.body;
-  if(!target){setTimeout(buildGateBtn,300);return}
+  const bar=document.getElementById('fabBar');
+  if(!bar){setTimeout(buildGateBtn,300);return}
   const b=document.createElement('button');
-  b.id='gbtn';b.textContent='◎';b.title='Echo/Clean Gate';
-  b.style.cssText='position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#2a2a35,#15151c);border:2px solid #2a2a35;color:#888;font-size:1.6rem;font-family:inherit;cursor:pointer;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);transition:.2s;display:flex;align-items:center;justify-content:center;padding:0;line-height:1';
+  b.id='gbtn';b.textContent='◎';b.title='Echo Gate';
+  b.style.cssText='width:52px;height:52px;border-radius:50%;background:linear-gradient(180deg,#2a2a35,#15151c);border:2px solid #2a2a35;color:#888;font-size:1.6rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 4px 12px rgba(0,0,0,.5);transition:.2s';
   b.onclick=toggleGate;
-  document.body.appendChild(b);
-  lg('🎛️ Tombol gate di-inject (universal)');
+  bar.appendChild(b);
+  lg('🎛️ Tombol Echo Gate di-inject');
 }
 function toggleGate(){
   echoGate=(echoGate+1)%3;
@@ -618,4 +621,24 @@ window.addEventListener('offline',uo);uo();
   setTimeout(go,300);
   setTimeout(go,1200);
 })();
-(function initNgBtn(){function go(){try{buildNgBtn()}catch(e){}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go,{once:true});else go();setTimeout(go,400);setTimeout(go,1500)})();</script></body></html>
+(function initNgBtn(){function go(){try{buildNgBtn()}catch(e){}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go,{once:true});else go();setTimeout(go,400);setTimeout(go,1500)})();(function initFab(){
+  function go(){
+    if(document.getElementById('fabBar'))return;
+    const bar=document.createElement('div');bar.id='fabBar';
+    bar.style.cssText='position:fixed;bottom:18px;right:12px;display:flex;flex-direction:column;gap:10px;z-index:99';
+    document.body.appendChild(bar);
+    // Pindahkan tombol yang sudah ada atau buat baru
+    ['gbtn','ngbtn'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){
+        el.style.cssText='width:52px;height:52px;border-radius:50%;background:linear-gradient(180deg,#2a2a35,#15151c);border:2px solid #2a2a35;color:#888;font-size:1.4rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 4px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);transition:.2s';
+        bar.appendChild(el);
+      }
+    });
+    if(!document.getElementById('ngbtn'))buildNgBtn();
+    if(!document.getElementById('gbtn'))buildGateBtn();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go,{once:true});else go();
+  setTimeout(go,400);setTimeout(go,1500);
+})();
+</script></body></html>
