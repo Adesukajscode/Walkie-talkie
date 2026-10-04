@@ -16,7 +16,13 @@ export default{
   }
 };
 export class Room{
-  constructor(s,e){this.state=s;this.env=e;this.socks=new Map();this.wsNo=new Map()}
+  constructor(s,e){
+    this.state=s;this.env=e;
+    this.socks=new Map();   // no -> ws
+    this.wsNo=new Map();    // ws -> no
+    this.locs=new Map();    // no -> {lat,lng,acc}
+    this.calls=new Map();   // no -> peerNo
+  }
   async fetch(req){
     const u=new URL(req.url);
     if(u.pathname==='/prewarm')return new Response('ok');
@@ -24,7 +30,7 @@ export class Room{
     if(u.pathname==='/users')return Response.json([...this.socks.keys()]);
     const up=(req.headers.get('Upgrade')||'').toLowerCase();
     if(up!=='websocket')return new Response('Expected WS',{status:426});
-    let pair;try{pair=new WebSocketPair()}catch(e){return new Response('WS fail: '+e.message,{status:500})}
+    let pair;try{pair=new WebSocketPair()}catch(e){return new Response('WS fail',{status:500})}
     const[c,s]=Object.values(pair);s.accept();
     this.send(s,{type:'welcome',t:Date.now()});
     s.addEventListener('message',ev=>{try{this.onMsg(s,ev.data)}catch(e){console.log('err',e.message)}});
@@ -45,22 +51,36 @@ export class Room{
       this.send(ws,{type:'registered',no});this.broadcastOnline();
       return;
     }
+    // ═══ GPS LOCATION ═══
+    if(t==='location'){
+      const no=this.wsNo.get(ws);
+      if(no){
+        const loc={lat:+m.lat,lng:+m.lng,acc:+m.acc||0};
+        this.locs.set(no,loc);
+        const peerNo=this.calls.get(no);
+        if(peerNo){
+          const peer=this.socks.get(peerNo);
+          if(peer)this.send(peer,{type:'peer-location',lat:loc.lat,lng:loc.lng,acc:loc.acc});
+        }
+      }
+      return;
+    }
     if(t==='call-user'){
       const from=this.wsNo.get(ws),to=cl(m.to),tg=this.socks.get(to);
       if(!from)return this.send(ws,{type:'error',msg:'Daftar dulu'});
       if(!tg)return this.send(ws,{type:'call-error',msg:`Nomor ${to} tidak online`});
-      // ⚡ BUNDLE: kirim offer langsung bersama incoming-call → hemat 1 round trip
-      this.send(tg,{type:'incoming-call',from,offer:m.sdp});
+      this.calls.set(from,to);this.calls.set(to,from);
+      const fromLoc=this.locs.get(from),toLoc=this.locs.get(to);
+      this.send(tg,{type:'incoming-call',from,offer:m.sdp,peerLoc:fromLoc||null});
+      if(toLoc)this.send(ws,{type:'peer-location',lat:toLoc.lat,lng:toLoc.lng,acc:toLoc.acc});
       return;
     }
-    if(t==='reject-call'){
-      const tg=this.socks.get(cl(m.to));
-      if(tg)this.send(tg,{type:'call-rejected'});
-      return;
-    }
-    if(t==='end-call'){
-      const tg=this.socks.get(cl(m.to));
-      if(tg)this.send(tg,{type:'call-ended'});
+    if(t==='reject-call'||t==='end-call'){
+      const me=this.wsNo.get(ws),to=cl(m.to),tg=this.socks.get(to);
+      const map={'reject-call':'call-rejected','end-call':'call-ended'};
+      if(tg)this.send(tg,{type:map[t]});
+      if(me)this.calls.delete(me);
+      if(to)this.calls.delete(to);
       return;
     }
     if(t==='offer'||t==='answer'||t==='ice-candidate'){
@@ -70,7 +90,16 @@ export class Room{
     }
     if(t==='unregister')this.cleanup(ws);
   }
-  cleanup(ws){const no=this.wsNo.get(ws);if(no&&this.socks.get(no)===ws)this.socks.delete(no);this.wsNo.delete(ws);this.broadcastOnline()}
+  cleanup(ws){
+    const no=this.wsNo.get(ws);
+    if(no&&this.socks.get(no)===ws){
+      this.socks.delete(no);this.locs.delete(no);
+      const p=this.calls.get(no);
+      if(p)this.calls.delete(p);
+      this.calls.delete(no);
+    }
+    this.wsNo.delete(ws);this.broadcastOnline();
+  }
   send(ws,o){try{ws.send(JSON.stringify(o))}catch{}}
   broadcastOnline(){const list=[...this.socks.keys()],msg=JSON.stringify({type:'online',list});for(const ws of this.socks.values())try{ws.send(msg)}catch{}}
 }

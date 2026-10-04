@@ -83,7 +83,7 @@ button:not(:disabled):active{transform:scale(.96)}
 const $=i=>document.getElementById(i),cl=n=>String(n||'').replace(/\D/g,''),lg=(...a)=>console.log('[WT]',...a);
 let tt;const ts=(m,c='')=>{const e=$('ts');e.textContent=m;e.className='ts on '+c;clearTimeout(tt);tt=setTimeout(()=>e.className='ts '+c,3000)};
 const WU=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
-let ws,wr=0,rt=0,pt=0,my=localStorage.getItem('myNo')||'',tg='',caller=0,pc,ls,rs,pend=[],rds=0,mo=0,raf,rp=0,rT,po=null,pf=null,ac,an,dt=null;
+let ws,wr=0,rt=0,pt=0,my=localStorage.getItem('myNo')||'',tg='',caller=0,pc,ls,rs,pend=[],rds=0,mo=0,raf,rp=0,rT,po=null,pf=null,ac,an,dt=null,myLoc=null,peerLoc=null,geoT=null;
 const ra=$('ra');ra.volume=1;ra.muted=false;
 const net=(s,t)=>{$('dt').className='d'+(s==='ok'?' o':(s==='w'?' n':''));$('sp').className='s'+(s==='ok'?'':' o');$('nt').textContent=t;$('rb').disabled=s!=='ok';$('cb').disabled=s!=='ok'};
 const rbR=()=>{$('rb').textContent='Daftar';$('rb').disabled=0;$('mn').disabled=0};
@@ -153,14 +153,51 @@ function mt(s){
     if((k++&3)===0){let mv=0,mb=0;for(let i=1;i<d.length;i++)if(d[i]>mv){mv=d[i];mb=i}const hz=mb*ac.sampleRate/an.fftSize,fv=$('fv');if(mv<15)fv.firstChild.textContent='—';else{fv.firstChild.textContent=hz<1000?hz.toFixed(0):(hz/1000).toFixed(2);fv.querySelector('.u').textContent=hz<1000?'Hz':'kHz'}}
     raf=requestAnimationFrame(tk)};tk();
 }
+function haversine(a,b){
+  const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function startGeo(){
+  if(!navigator.geolocation){lg('❌ no GPS API');return}
+  navigator.geolocation.watchPosition(
+    p=>{
+      myLoc={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy||0};
+      lg('📍 GPS',myLoc.lat.toFixed(6),myLoc.lng.toFixed(6),'±',myLoc.acc.toFixed(0),'m');
+      if(wr)wsS({type:'location',lat:myLoc.lat,lng:myLoc.lng,acc:myLoc.acc});
+      ud();
+    },
+    e=>lg('geo err',e.code,e.message),
+    {enableHighAccuracy:true,maximumAge:20000,timeout:15000}
+  );
+}
 async function ud(){
+  // Prioritaskan GPS
+  if(myLoc&&peerLoc){
+    const d=haversine(myLoc,peerLoc);
+    const err=(myLoc.acc||0)+(peerLoc.acc||0);
+    let txt,u;
+    if(d<1000){txt=d.toFixed(0);u=' m'}
+    else if(d<10000){txt=(d/1000).toFixed(2);u=' km'}
+    else{txt=(d/1000).toFixed(1);u=' km'}
+    $('dv').firstChild.textContent=txt;$('du').textContent=u;
+    lg('📍 dist(GPS)=',d.toFixed(1),'m ±',err.toFixed(0),'m');
+    return;
+  }
+  // Fallback RTT
   if(!pc||pc.connectionState!=='connected')return;
-  try{const s=await pc.getStats();let rtt=null;
+  try{
+    const s=await pc.getStats();let rtt=null;
     s.forEach(r=>{if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.nominated&&r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime});
     if(rtt==null)s.forEach(r=>{if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.currentRoundTripTime!=null)rtt=r.currentRoundTripTime});
-    if(rtt>0){const c=200000;let km=Math.max(0,(rtt/2)*c-(0.005*c/2));let txt,u;
-      if(km<1){txt=(km*1000).toFixed(0);u=' m'}else if(km<1000){txt=km.toFixed(1);u=' km'}else{txt=(km/1000).toFixed(2);u=' Mm'}
-      $('dv').firstChild.textContent=txt;$('du').textContent=u}
+    if(rtt>0){
+      const c=200000;let km=Math.max(0,(rtt/2)*c-(0.005*c/2));
+      let txt,u;
+      if(km<1){txt=(km*1000).toFixed(0);u=' m~'}
+      else if(km<1000){txt=km.toFixed(1);u=' km~'}
+      else{txt=(km/1000).toFixed(2);u=' Mm~'}
+      $('dv').firstChild.textContent=txt;$('du').textContent=u;
+    }
   }catch(e){}
 }
 const startDist=()=>{clearInterval(dt);dt=setInterval(ud,1500);setTimeout(ud,500)};
@@ -168,7 +205,7 @@ const stopDist=()=>{clearInterval(dt);dt=null;const d=$('dv');if(d)d.firstChild.
 function wsC(){
   lg('WS->',WU);net('w','Menghubungkan...');
   try{ws=new WebSocket(WU)}catch(e){net('','LINK ERROR');setTimeout(wsC,1500);return}
-  ws.onopen=()=>{wr=1;rt=0;lg('✅ ws OPEN');net('ok','Online');
+  ws.onopen=()=>{wr=1;rt=0;lg('✅ ws OPEN');net('ok','Online');startGeo();
     if(my){wsS({type:'register',no:my});rp=1;clearTimeout(rT);rT=setTimeout(()=>{if(rp){ts('Timeout','e');rp=0;rbR()}},8e3)}
     clearInterval(pt);pt=setInterval(()=>wsS({type:'ping'}),20000)};
   ws.onmessage=e=>{try{om(JSON.parse(e.data))}catch(err){lg('parse',err)}};
@@ -181,8 +218,9 @@ function om(m){
   if(t==='registered'){rp=0;clearTimeout(rT);my=m.no;localStorage.setItem('myNo',m.no);$('rs').classList.add('h');$('cs').classList.remove('h');$('m').textContent='ID: '+m.no;$('m').className='t k';rbR();ts('✅ '+m.no,'k');gm().then(()=>pw()).catch(()=>{})}
   else if(t==='error'){rp=0;clearTimeout(rT);rbR();ts('❌ '+m.msg,'e')}
   else if(t==='online')$('o').textContent='Online: '+(m.list.join(', ')||'-');
+  else if(t==='peer-location'){peerLoc={lat:m.lat,lng:m.lng,acc:m.acc||0};lg('📍 peerLoc',peerLoc);ud()}
   else if(t==='force-logout'){ts('Nomor dipakai di HP lain','e');setTimeout(L,1500)}
-  else if(t==='incoming-call'){ra.play().catch(()=>{});po=m.offer;pf=m.from;$('ci').textContent=m.from;$('n').classList.add('on');navigator.vibrate&&navigator.vibrate([200,100,200]);gm().then(()=>pw()).catch(()=>{})}
+  else if(t==='incoming-call'){ra.play().catch(()=>{});po=m.offer;pf=m.from;if(m.peerLoc)peerLoc={lat:m.peerLoc.lat,lng:m.peerLoc.lng,acc:m.peerLoc.acc||0};$('ci').textContent=m.from;$('n').classList.add('on');navigator.vibrate&&navigator.vibrate([200,100,200]);gm().then(()=>pw()).catch(()=>{})}
   else if(t==='call-rejected'){$('m').textContent='Ditolak';cl_()}
   else if(t==='call-ended'){$('m').textContent='Selesai';cl_()}
   else if(t==='call-error'){ts(m.msg,'e');$('m').textContent=m.msg;$('m').className='t e'}
@@ -225,7 +263,7 @@ function cl_(){
   try{ls&&ls.getTracks().forEach(t=>t.stop())}catch(_){}ls=null;lp=null;rs=null;ra.srcObject=null;
   pend=[];rds=0;cancelAnimationFrame(raf);$('vu').style.width='0';
   $('pb').disabled=true;$('pb').classList.remove('on');$('pb').textContent='TAHAN UNTUK BICARA';
-  po=null;pf=null;stopDist();$('fv').firstChild.textContent='—';
+  po=null;pf=null;peerLoc=null;stopDist();$('fv').firstChild.textContent='—';
 }
 function ST(e){
   if(e){e.preventDefault();e.stopPropagation&&e.stopPropagation()}
