@@ -20,10 +20,10 @@ export class Room{
   async fetch(req){
     const u=new URL(req.url);
     if(u.pathname==='/prewarm')return new Response('ok');
-    if(u.pathname==='/debug')return Response.json({users:[...this.socks.keys()],socks:this.socks.size,wsNo:this.wsNo.size});
+    if(u.pathname==='/debug')return Response.json({users:[...this.socks.keys()],socks:this.socks.size});
     if(u.pathname==='/users')return Response.json([...this.socks.keys()]);
     const up=(req.headers.get('Upgrade')||'').toLowerCase();
-    if(up!=='websocket')return new Response('Expected WS, got '+up,{status:426});
+    if(up!=='websocket')return new Response('Expected WS',{status:426});
     let pair;try{pair=new WebSocketPair()}catch(e){return new Response('WS fail: '+e.message,{status:500})}
     const[c,s]=Object.values(pair);s.accept();
     this.send(s,{type:'welcome',t:Date.now()});
@@ -35,7 +35,7 @@ export class Room{
   onMsg(ws,raw){
     let m;try{m=JSON.parse(raw)}catch{return}
     const t=m.type,cl=n=>String(n||'').replace(/\D/g,'');
-    if(t==='ping')return this.send(ws,{type:'pong',t:Date.now()});
+    if(t==='ping')return this.send(ws,{type:'pong'});
     if(t==='register'){
       const no=cl(m.no);
       if(!/^(0|62)?8\d{7,13}$/.test(no))return this.send(ws,{type:'error',msg:'Nomor tidak valid'});
@@ -49,12 +49,19 @@ export class Room{
       const from=this.wsNo.get(ws),to=cl(m.to),tg=this.socks.get(to);
       if(!from)return this.send(ws,{type:'error',msg:'Daftar dulu'});
       if(!tg)return this.send(ws,{type:'call-error',msg:`Nomor ${to} tidak online`});
-      this.send(tg,{type:'incoming-call',from});return;
+      // ⚡ BUNDLE: kirim offer langsung bersama incoming-call → hemat 1 round trip
+      this.send(tg,{type:'incoming-call',from,offer:m.sdp});
+      return;
     }
-    if(t==='accept-call'||t==='reject-call'||t==='end-call'){
+    if(t==='reject-call'){
       const tg=this.socks.get(cl(m.to));
-      const map={'accept-call':'call-accepted','reject-call':'call-rejected','end-call':'call-ended'};
-      if(tg)this.send(tg,{type:map[t]});return;
+      if(tg)this.send(tg,{type:'call-rejected'});
+      return;
+    }
+    if(t==='end-call'){
+      const tg=this.socks.get(cl(m.to));
+      if(tg)this.send(tg,{type:'call-ended'});
+      return;
     }
     if(t==='offer'||t==='answer'||t==='ice-candidate'){
       const from=this.wsNo.get(ws),tg=this.socks.get(cl(m.to));
